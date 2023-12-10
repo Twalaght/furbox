@@ -1,0 +1,26 @@
+[flake8]
+max-line-length = 120
+extend-ignore =
+    # ANN002 - Missing type annotation for *args
+    ANN002,
+    # ANN003 - Missing type annotation for **kwargs
+    ANN003,
+    # ANN101 - Missing type annotation for self in method
+    ANN101,
+    # ANN102 - Missing type annotation for cls in classmethod
+    ANN102,
+    # CCE001 - Wrong class attributes order
+    CCE001,
+    # D104   - Missing docstring in public package
+    D104,
+    # D107   - Missing docstring in __init__
+    D107,
+    # D210   - No whitespaces allowed surrounding docstring text
+    D210,
+    # I201   - Missing newline between import groups
+    I201,
+    # T000   - Todo note found
+    T000,
+
+# Pydoclint config
+style = google

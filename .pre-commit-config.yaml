@@ -1,0 +1,30 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+    -   id: check-json
+    -   id: check-merge-conflict
+    -   id: check-executables-have-shebangs
+    -   id: check-shebang-scripts-are-executable
+    -   id: check-toml
+    -   id: check-yaml
+    -   id: end-of-file-fixer
+    -   id: mixed-line-ending
+        args: [--fix, lf]
+    -   id: pretty-format-json
+        args: [--autofix, --indent, "4"]
+-   repo: https://github.com/lyz-code/yamlfix
+    rev: 1.16.0
+    hooks:
+    -   id: yamlfix
+-   repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.11.0
+    hooks:
+    -   id: markdownlint-cli2
+-   repo: local
+    hooks:
+    -   id: flake8
+        name: flake8
+        entry: flake8 --append-config .flake8
+        language: system
+        types: [python]
