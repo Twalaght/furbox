@@ -1,27 +1,25 @@
-""" Centralised module to handle access and parsing of all application configuration.
-
-Example usage of Config: ::
-
-    config = Config()
-    for config_file in config_files:
-        with open(config_file) as f:
-            data = yaml.safe_load(f)
-            config.parse_dict(data)
-"""
+""" Base class for dataclasses to add standardised functionality. """
 import logging
-from dataclasses import dataclass, field, is_dataclass
+from dataclasses import dataclass, is_dataclass
 from typing import Any
+from typing_extensions import Self
 
 logger = logging.getLogger(__name__)
 
 
-class _ConfigParser:
-    def parse_dict(self, data: dict[str, Any], overwrite: bool = False) -> None:
+@dataclass
+class DataclassParser:
+    """ Base class for dataclasses to add standardised parser behaviour. """
+
+    def parse_dict(self, data: dict[str, Any], overwrite: bool = False) -> Self:
         """ Populate a dataclass with values from a dictionary.
 
         Args:
             data (dict[str, Any]): Dictionary of mapped field/value pairs for the dataclass.
             overwrite (bool, optional): Overwrite existing field values. Defaults to False.
+
+        Returns:
+            Self: Reference to dataclass itself.
         """
         dataclass_name = self.__class__.__name__
 
@@ -47,25 +45,4 @@ class _ConfigParser:
             logger.warning(f"Received definitions for '{dataclass_name}' which did not match any fields. "
                            f"Dataclass field keys = {list(data.keys())}")
 
-
-@dataclass
-class Config(_ConfigParser):
-    """ Unified config object for various dataclass namespaces and top level fields. """
-
-    @dataclass
-    class E621(_ConfigParser):
-        """ E621 config definitions. """
-
-        @dataclass
-        class FavPaths(_ConfigParser):
-            """ E621 favourite path config definitions. """
-
-            safe:         str = ""
-            questionable: str = ""
-            explicit:     str = ""
-
-        username:  str = ""
-        api_key:   str = ""
-        fav_paths: FavPaths = field(default_factory=FavPaths)
-
-    e621: E621 = field(default_factory=E621)
+        return self
