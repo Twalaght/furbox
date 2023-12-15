@@ -33,8 +33,7 @@ class _ConfigParser:
                     reference.parse_dict(data_subset, overwrite)
 
             # For fields which exist in data, set the field value if permissable
-            elif (field_name in data) and (value := data.pop(field_name)):
-                # if existing_value := getattr(dataclass, field_name, None):
+            elif (field_name in data) and ((value := data.pop(field_name)) is not None):
                 if getattr(self, field_name, None):
                     if overwrite:
                         logger.debug(f"Duplicate definition for '{dataclass_name}', overwriting")
