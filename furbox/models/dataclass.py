@@ -2,6 +2,7 @@
 import logging
 from dataclasses import dataclass, is_dataclass
 from typing import Any
+
 from typing_extensions import Self
 
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ class DataclassParser:
             overwrite (bool, optional): Overwrite existing field values. Defaults to False.
 
         Returns:
-            Self: Reference to dataclass itself.
+            Self: Reference to the dataclass itself.
         """
         dataclass_name = self.__class__.__name__
 

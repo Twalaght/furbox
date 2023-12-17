@@ -1,4 +1,4 @@
-""" Centralised module to handle access and parsing of all application configuration.
+""" Module to handle access and parsing of all application configuration.
 
 Example usage of Config: ::
 

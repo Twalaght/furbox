@@ -10,6 +10,7 @@ readme = "README.md"
 
 dependencies = [
     "requests",
+    "typing-extensions",
 ]
 
 [project.optional-dependencies]
