@@ -2,10 +2,16 @@
 
 Example usage ::
 
+    # From API response
     api_response = e621_connector.get_posts("vulpine")
     api_posts = [Post().from_api(post) for post in api_response]
 
-    # TODO - Database example
+    # From database dump
+    with open("posts.csv") as f:
+        database_posts = [
+            Post().from_database(row)
+            for row in csv.DictReader(f)
+        ]
 """
 import logging
 from copy import deepcopy
@@ -129,9 +135,73 @@ class Post(DataclassParser):
 
         return self.parse_dict(data)
 
-    def from_database(self, database_entry: dict[str, Any]) -> Self:
-        """ TODO. """
-        raise NotImplementedError
+    def from_database(self, database_entry: dict[str, str]) -> Self:
+        """ Create a post from a database CSV row input.
+
+        Args:
+            database_entry (dict[str, str]): Database CSV entry for a single post.
+
+        Returns:
+            Self: Reference to the dataclass itself.
+        """
+        def char_to_bool(char: str) -> bool:
+            """ Convert a single character input to the corresponding boolean. """
+            return bool(char == "t")
+
+        file_info = {
+            "width":  int(database_entry["image_width"]),
+            "height": int(database_entry["image_height"]),
+            "size":   int(database_entry["file_size"]),
+            "ext":    database_entry["file_ext"],
+            "md5":    database_entry["md5"],
+            "url":    self._source_url_from_hash(database_entry["md5"], database_entry["file_ext"]),
+        }
+
+        flags = {
+            "deleted":       char_to_bool(database_entry["is_deleted"]),
+            "pending":       char_to_bool(database_entry["is_pending"]),
+            "flagged":       char_to_bool(database_entry["is_flagged"]),
+            "rating_locked": char_to_bool(database_entry["is_rating_locked"]),
+            "status_locked": char_to_bool(database_entry["is_status_locked"]),
+            "note_locked":   char_to_bool(database_entry["is_note_locked"]),
+        }
+
+        relationships = {
+            "parent_id": int(parent_id) if (parent_id := database_entry["parent_id"]) else None,
+        }
+
+        score = {
+            "total": int(database_entry["score"]),
+            "up":    int(database_entry["up_score"]),
+            "down":  int(database_entry["down_score"]),
+        }
+
+        all_tags = []
+        for tag_type in ["tag_string", "locked_tags"]:
+            if tag_string := database_entry[tag_type]:
+                all_tags.extend(tag_string.split())
+
+        return self.parse_dict({
+            "post_id":       int(database_entry["id"]),
+            "uploader_id":   int(database_entry["uploader_id"]),
+            "approver_id":   int(approver_id) if (approver_id := database_entry.get("approver_id")) else None,
+            "created_at":    self._parse_datetime(database_entry["created_at"]),
+            "updated_at":    self._parse_datetime(database_entry["updated_at"]),
+            "rating":        database_entry["rating"],
+            "description":   database_entry["description"],
+            "fav_count":     int(database_entry["fav_count"]),
+            "comment_count": int(database_entry["comment_count"]),
+            "change_seq":    int(database_entry["change_seq"]),
+            "duration":      float(duration) if (duration := database_entry.get("duration")) else None,
+            "is_favorited":  None,
+            "sources":       database_entry["source"].splitlines(),
+            "pools":         None,
+            "file_info":     file_info,
+            "flags":         flags,
+            "relationships": relationships,
+            "score":         score,
+            "tags":          {"all_tags": all_tags},
+        })
 
     @staticmethod
     def _parse_datetime(iso_datetime: str) -> datetime | None:
@@ -150,3 +220,18 @@ class Post(DataclassParser):
         # Retain only the "%Y-%m-%d" and "%H:%M:%S" components of the ISO string
         clipped_iso_datetime = iso_datetime[:10] + " " + iso_datetime[11:19]
         return datetime.strptime(clipped_iso_datetime, "%Y-%m-%d %H:%M:%S")
+
+    @staticmethod
+    def _source_url_from_hash(md5_hash: str, extension: str) -> str:
+        """ Get a post source url from an MD5 hash.
+
+        Args:
+            md5_hash (str): MD5 hash of the post.
+            extension (str): File extension of the post.
+
+        Returns:
+            str: Full quality source url corresponding to the input hash.
+        """
+        # As e621 is a superset of e926, e621 can be used as the base url for sources in all instances
+        base_url = "https://static1.e621.net/data"
+        return f"{base_url}/{md5_hash[:2]}/{md5_hash[2:4]}/{md5_hash}.{extension}"
