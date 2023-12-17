@@ -39,9 +39,9 @@ class Post(DataclassParser):
     class Flags(DataclassParser):
         """ Post status flags. """
 
-        deleted:          bool = None
-        pending:          bool = None
-        flagged:          bool = None
+        deleted:       bool = None
+        pending:       bool = None
+        flagged:       bool = None
         rating_locked: bool = None
         status_locked: bool = None
         note_locked:   bool = None
@@ -118,10 +118,8 @@ class Post(DataclassParser):
         data["tags"]["all_tags"] = list(set(sum(data["tags"].values(), [])))
 
         # Convert ISO datetime strings to datetime objects
-        created_at = data.get("created_at")
-        data["created_at"] = self._parse_datetime(created_at) if created_at else None
-        updated_at = data.get("updated_at")
-        data["updated_at"] = self._parse_datetime(updated_at) if updated_at else None
+        data["created_at"] = self._parse_datetime(data["created_at"])
+        data["updated_at"] = self._parse_datetime(data["updated_at"])
 
         # Explicitly drop some API data which is not parsed to a post dataclass
         data.pop("preview", None)
@@ -136,15 +134,19 @@ class Post(DataclassParser):
         raise NotImplementedError
 
     @staticmethod
-    def _parse_datetime(iso_datetime: str) -> datetime:
+    def _parse_datetime(iso_datetime: str) -> datetime | None:
         """ Parse varied formats of ISO datetime strings to a standardised datetime object.
 
         Args:
             iso_datetime (str): ISO time string.
 
         Returns:
-            datetime: Converted datetime object from the ISO string.
+            datetime | None: Converted datetime object from the ISO string, \
+                             or None if the input was not valid.
         """
+        if not iso_datetime or len(iso_datetime) < 19:
+            return None
+
         # Retain only the "%Y-%m-%d" and "%H:%M:%S" components of the ISO string
         clipped_iso_datetime = iso_datetime[:10] + " " + iso_datetime[11:19]
         return datetime.strptime(clipped_iso_datetime, "%Y-%m-%d %H:%M:%S")
