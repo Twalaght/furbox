@@ -1,5 +1,8 @@
 [flake8]
 max-line-length = 120
+per-file-ignores =
+    # F401 - Module imported but unused
+    furbox/main.py:F401
 extend-ignore =
     # ANN002 - Missing type annotation for *args
     ANN002,
