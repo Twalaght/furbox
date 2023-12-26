@@ -21,6 +21,13 @@ class Config(DataclassParser):
     """ Unified config object for various dataclass namespaces and top level fields. """
 
     @dataclass
+    class Comics(DataclassParser):
+        """ Comics config definitions. """
+
+        base_path:     str = None
+        database_file: str = None
+
+    @dataclass
     class E621(DataclassParser):
         """ E621 config definitions. """
 
@@ -28,12 +35,13 @@ class Config(DataclassParser):
         class FavPaths(DataclassParser):
             """ E621 favourite path config definitions. """
 
-            safe:         str = ""
-            questionable: str = ""
-            explicit:     str = ""
+            safe:         str = None
+            questionable: str = None
+            explicit:     str = None
 
-        username:  str = ""
-        api_key:   str = ""
+        username:  str = None
+        api_key:   str = None
         fav_paths: FavPaths = field(default_factory=FavPaths)
 
+    comics: Comics = field(default_factory=Comics)
     e621: E621 = field(default_factory=E621)

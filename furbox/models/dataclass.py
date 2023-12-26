@@ -1,6 +1,6 @@
 """ Base class for dataclasses to add standardised functionality. """
 import logging
-from dataclasses import dataclass, is_dataclass
+from dataclasses import asdict, dataclass, is_dataclass
 from typing import Any
 
 from typing_extensions import Self
@@ -47,3 +47,7 @@ class DataclassParser:
                            f"Dataclass field keys = {list(data.keys())}")
 
         return self
+
+    def to_dict(self) -> dict[str, Any]:
+        """ Return a generic dictionary representation of a dataclass. """
+        return asdict(self)
