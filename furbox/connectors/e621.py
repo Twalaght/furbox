@@ -2,6 +2,7 @@
 import logging
 from base64 import b64encode
 from time import sleep
+from typing import Any
 
 from requests import session
 from tqdm import tqdm
@@ -22,7 +23,6 @@ class E621Connector:
     MAX_PAGE:   int = 750
 
     base_url:            str = "https://e621.net"
-    threads:             int = 8
     leave_progress_bars: bool = True
     progress_bar_format: str = "{desc}: {n_fmt} [{elapsed}]"
 
@@ -34,7 +34,8 @@ class E621Connector:
             "Authorization": f"Basic {b64_basic_auth}",
         })
 
-    def get_posts(self, search: str, offset: int | None = None, limit: int | None = None) -> list[dict]:
+    def get_posts(self, search: str, offset: int | None = None,
+                  limit: int | None = None, desc: str = None) -> list[dict[str, Any]]:
         """ Get e621 posts matching a search query.
 
         Args:
@@ -43,9 +44,11 @@ class E621Connector:
                                            Defaults to None, where no posts will be skipped.
             limit (int | None, optional): Maximum number of posts to return. \
                                           Defaults to None, where all posts will be returned.
+            desc (str, optional): Description to use in progress bar. Defaults to None, \
+                                  which will use the search query string.
 
         Returns:
-            list[dict]: Post JSON data matching the search query.
+            list[dict[str, Any]]: Post JSON data matching the search query.
         """
         # For substantial offsets, skip straight to the page where results start
         page = 1
@@ -63,7 +66,7 @@ class E621Connector:
             if limit:
                 limit += offset
 
-        progress_bar = tqdm(desc=f"Fetching posts - {search}",
+        progress_bar = tqdm(desc=f"Fetching posts - {desc or search}",
                             position=0,
                             bar_format=self.progress_bar_format,
                             leave=self.leave_progress_bars)
@@ -95,3 +98,17 @@ class E621Connector:
 
         progress_bar.close()
         return posts[offset:limit]
+
+    def get_pool(self, pool_id: int | str) -> dict[str, Any]:
+        """ Get an e621 pool by ID.
+
+        Args:
+            pool_id (int | str): Pool ID number.
+
+        Returns:
+            dict[str, Any]: Pool JSON data.
+        """
+        search_url = f"{self.base_url}/pools/{str(pool_id)}.json"
+        response = self.session.get(search_url)
+        response.raise_for_status()
+        return response.json()
