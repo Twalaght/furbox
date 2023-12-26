@@ -1,6 +1,6 @@
-""" Module implementing a model representation of an e621 post, and parsing functionality.
+""" Module implementing a model representation of e621 posts and pools, with parsing functionality.
 
-Example usage ::
+Example usage for a post: ::
 
     # From API response
     api_response = e621_connector.get_posts("vulpine")
@@ -26,8 +26,50 @@ from typing_extensions import Self
 logger = logging.getLogger(__name__)
 
 
+class E621Model(DataclassParser):
+    """ Standardised parsing behaviour for E621 models. """
+
+    @staticmethod
+    def char_to_bool(char: str) -> bool:
+        """ Convert a single character input to the corresponding boolean. """
+        return bool(char == "t")
+
+    @staticmethod
+    def parse_datetime(iso_datetime: str) -> datetime | None:
+        """ Parse varied formats of ISO datetime strings to a standardised datetime object.
+
+        Args:
+            iso_datetime (str): ISO time string.
+
+        Returns:
+            datetime | None: Converted datetime object from the ISO string, \
+                             or None if the input was not valid.
+        """
+        if not iso_datetime or len(iso_datetime) < 19:
+            return None
+
+        # Retain only the "%Y-%m-%d" and "%H:%M:%S" components of the ISO string
+        clipped_iso_datetime = iso_datetime[:10] + " " + iso_datetime[11:19]
+        return datetime.strptime(clipped_iso_datetime, "%Y-%m-%d %H:%M:%S")
+
+    @staticmethod
+    def source_url_from_hash(md5_hash: str, extension: str) -> str:
+        """ Get a post source url from an MD5 hash.
+
+        Args:
+            md5_hash (str): MD5 hash of the post.
+            extension (str): File extension of the post.
+
+        Returns:
+            str: Full quality source url corresponding to the input hash.
+        """
+        # As e621 is a superset of e926, e621 can be used as the base url for sources in all instances
+        base_url = "https://static1.e621.net/data"
+        return f"{base_url}/{md5_hash[:2]}/{md5_hash[2:4]}/{md5_hash}.{extension}"
+
+
 @dataclass
-class Post(DataclassParser):
+class Post(E621Model):
     """ Dataclass representation of an e621 post. """
 
     @dataclass
@@ -124,8 +166,8 @@ class Post(DataclassParser):
         data["tags"]["all_tags"] = list(set(sum(data["tags"].values(), [])))
 
         # Convert ISO datetime strings to datetime objects
-        data["created_at"] = self._parse_datetime(data["created_at"])
-        data["updated_at"] = self._parse_datetime(data["updated_at"])
+        data["created_at"] = self.parse_datetime(data["created_at"])
+        data["updated_at"] = self.parse_datetime(data["updated_at"])
 
         # Explicitly drop some API data which is not parsed to a post dataclass
         data.pop("preview", None)
@@ -144,26 +186,22 @@ class Post(DataclassParser):
         Returns:
             Self: Reference to the dataclass itself.
         """
-        def char_to_bool(char: str) -> bool:
-            """ Convert a single character input to the corresponding boolean. """
-            return bool(char == "t")
-
         file_info = {
             "width":  int(database_entry["image_width"]),
             "height": int(database_entry["image_height"]),
             "size":   int(database_entry["file_size"]),
             "ext":    database_entry["file_ext"],
             "md5":    database_entry["md5"],
-            "url":    self._source_url_from_hash(database_entry["md5"], database_entry["file_ext"]),
+            "url":    self.source_url_from_hash(database_entry["md5"], database_entry["file_ext"]),
         }
 
         flags = {
-            "deleted":       char_to_bool(database_entry["is_deleted"]),
-            "pending":       char_to_bool(database_entry["is_pending"]),
-            "flagged":       char_to_bool(database_entry["is_flagged"]),
-            "rating_locked": char_to_bool(database_entry["is_rating_locked"]),
-            "status_locked": char_to_bool(database_entry["is_status_locked"]),
-            "note_locked":   char_to_bool(database_entry["is_note_locked"]),
+            "deleted":       self.char_to_bool(database_entry["is_deleted"]),
+            "pending":       self.char_to_bool(database_entry["is_pending"]),
+            "flagged":       self.char_to_bool(database_entry["is_flagged"]),
+            "rating_locked": self.char_to_bool(database_entry["is_rating_locked"]),
+            "status_locked": self.char_to_bool(database_entry["is_status_locked"]),
+            "note_locked":   self.char_to_bool(database_entry["is_note_locked"]),
         }
 
         relationships = {
@@ -185,8 +223,8 @@ class Post(DataclassParser):
             "post_id":       int(database_entry["id"]),
             "uploader_id":   int(database_entry["uploader_id"]),
             "approver_id":   int(approver_id) if (approver_id := database_entry.get("approver_id")) else None,
-            "created_at":    self._parse_datetime(database_entry["created_at"]),
-            "updated_at":    self._parse_datetime(database_entry["updated_at"]),
+            "created_at":    self.parse_datetime(database_entry["created_at"]),
+            "updated_at":    self.parse_datetime(database_entry["updated_at"]),
             "rating":        database_entry["rating"],
             "description":   database_entry["description"],
             "fav_count":     int(database_entry["fav_count"]),
@@ -203,35 +241,68 @@ class Post(DataclassParser):
             "tags":          {"all_tags": all_tags},
         })
 
-    @staticmethod
-    def _parse_datetime(iso_datetime: str) -> datetime | None:
-        """ Parse varied formats of ISO datetime strings to a standardised datetime object.
+
+@dataclass
+class Pool(E621Model):
+    """ Dataclass representation of an e621 pool. """
+
+    pool_id:     int = None
+    name:        str = None
+    created_at:  datetime = None
+    updated_at:  datetime = None
+    description: str = None
+    active:      bool = None
+    category:    str = None
+    post_ids:    list[int] = field(default_factory=list)
+    post_count:  int = None
+
+    def from_api(self, api_response: dict[str, Any]) -> Self:
+        """ Create a pool from an API response input.
 
         Args:
-            iso_datetime (str): ISO time string.
+            api_response (dict[str, Any]): API JSON response data for a single pool.
 
         Returns:
-            datetime | None: Converted datetime object from the ISO string, \
-                             or None if the input was not valid.
+            Self: Reference to the dataclass itself.
         """
-        if not iso_datetime or len(iso_datetime) < 19:
-            return None
+        # Copy the API response such that the input data is not mangled during the remap
+        data = deepcopy(api_response)
 
-        # Retain only the "%Y-%m-%d" and "%H:%M:%S" components of the ISO string
-        clipped_iso_datetime = iso_datetime[:10] + " " + iso_datetime[11:19]
-        return datetime.strptime(clipped_iso_datetime, "%Y-%m-%d %H:%M:%S")
+        # Rename response fields to match their corresponding dataclass fields
+        data["pool_id"] = data.pop("id")
+        data["active"] = data.pop("is_active")
 
-    @staticmethod
-    def _source_url_from_hash(md5_hash: str, extension: str) -> str:
-        """ Get a post source url from an MD5 hash.
+        # Perform type conversions where required
+        data["created_at"] = self.parse_datetime(data["created_at"])
+        data["updated_at"] = self.parse_datetime(data["updated_at"])
+        data["active"] = self.char_to_bool(data["active"])
+
+        # Explicitly drop some API data which is not parsed to a post dataclass
+        data.pop("creator_id", None)
+        data.pop("creator_name", None)
+
+        return self.parse_dict(data)
+
+    def from_database(self, database_entry: dict[str, str]) -> Self:
+        """ Create a pool from a database CSV row input.
 
         Args:
-            md5_hash (str): MD5 hash of the post.
-            extension (str): File extension of the post.
+            database_entry (dict[str, str]): Database CSV entry for a single pool.
 
         Returns:
-            str: Full quality source url corresponding to the input hash.
+            Self: Reference to the dataclass itself.
         """
-        # As e621 is a superset of e926, e621 can be used as the base url for sources in all instances
-        base_url = "https://static1.e621.net/data"
-        return f"{base_url}/{md5_hash[:2]}/{md5_hash[2:4]}/{md5_hash}.{extension}"
+        post_ids_str = database_entry["post_ids"][1:-1]
+        post_ids = [int(post_id) for post_id in post_ids_str.split(",")] if post_ids_str else []
+
+        return self.parse_dict({
+            "pool_id":     int(database_entry["id"]),
+            "name":        database_entry["name"],
+            "created_at":  self.parse_datetime(database_entry["created_at"]),
+            "updated_at":  self.parse_datetime(database_entry["updated_at"]),
+            "description": database_entry["description"],
+            "active":      self.char_to_bool(database_entry["is_active"]),
+            "category":    database_entry["category"],
+            "post_ids":    post_ids,
+            "post_count":  len(post_ids),
+        })
