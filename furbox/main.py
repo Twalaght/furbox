@@ -5,7 +5,7 @@ from pathlib import Path
 
 from furbox.models.config import Config
 from furbox.runners import cli
-from furbox.runners.e621 import download
+from furbox.runners.comics import comics_update
 
 import yaml
 
