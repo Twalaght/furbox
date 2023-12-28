@@ -112,3 +112,10 @@ class E621Connector:
         response = self.session.get(search_url)
         response.raise_for_status()
         return response.json()
+
+
+class E621DbConnector:
+    """ TODO. """
+
+    def __init__(self) -> None:
+        raise NotImplementedError

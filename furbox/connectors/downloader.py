@@ -25,7 +25,7 @@ def parallel_download(args: tuple[str, str | os.PathLike]) -> None:
     download(*args)
 
 
-def download_files(desc: str, file_urls: list[str], file_names: list[str], local_dir: str | os.PathLike) -> None:
+def download_files(desc: str, file_urls: list[str], file_names: list[str], download_dir: str | os.PathLike) -> None:
     """ TODO. """
     if len(file_urls) != len(file_names):
         # TODO - This shouldn't be able to happen normally
@@ -35,7 +35,7 @@ def download_files(desc: str, file_urls: list[str], file_names: list[str], local
     for url, name in zip(file_urls, file_names):
         ext = url.split(".")[-1]
         download_args.append(
-            (url, Path(local_dir) / f"{name}.{ext}"),
+            (url, Path(download_dir) / f"{name}.{ext}"),
         )
 
     # TODO - Custom bar format

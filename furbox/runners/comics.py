@@ -1,11 +1,12 @@
-""" TODO. """
+""" Runner to update and synchronise collections of comics. """
 import argparse
 import logging
+import os
 from dataclasses import dataclass
 from pathlib import Path
 
 from furbox.connectors.downloader import download_files, get_numbered_file_names
-from furbox.connectors.e621 import E621Connector
+from furbox.connectors.e621 import E621Connector, E621DbConnector
 from furbox.models.config import Config
 from furbox.models.e621 import Pool, Post
 from furbox.runners import cli
@@ -14,74 +15,88 @@ import yaml
 
 logger = logging.getLogger(__name__)
 
-_PARSER = cli.create_subparser("comics_update", has_subparsers=True, help="TODO.")
+_PARSER = cli.create_subparser("comics_update", has_subparsers=True, help="Update local comic files.")
 
 
 @dataclass
 class E621Comic(Pool):
-    """ TODO. """
+    """ Extension of E621 Pool dataclass with local archive information. """
 
-    offset: int = 0
-    folder: str = None
-    update: bool = True
-
-    @property
-    def valid_post_count(self) -> str:
-        """ TODO. """
-        if self.offset < 0:
-            return self.post_count + self.offset
-
-        if self.offset > 0:
-            return self.post_count - self.offset
-
-        return self.post_count
+    # Number of posts which are not expected to be downloaded (Ex. Deliberately excluded pages)
+    local_offset:   int = 0
+    # Number of posts which have been deleted on server side, and should be skipped over
+    server_deleted: int = 0
+    # Local directory to download files to, relative to the base comics directory
+    dir_name:       str | os.PathLike = None
+    # Update the local files if True, only check for new items without downloading if False
+    update:         bool = True
 
 
-def e621_comics_update(e621_connector: E621Connector, pools: list[E621Comic],
-                       comic_path: str, use_database: bool = False) -> None:
-    """ TODO. """
+def e621_comics_update(api_connector: E621Connector, pools: list[E621Comic],
+                       comic_path: str | os.PathLike, db_connector: E621DbConnector = None) -> None:
+    """ Check for new posts and download new items for E621 pools.
+
+    Args:
+        api_connector (E621Connector): E621 connector object to interact with the API.
+        pools (list[E621Comic]): List of pool objects, with information about the local archive.
+        comic_path (str | os.PathLike): Base directory for comic archives.
+        db_connector (E621DbConnector, optional): E621 database connector, if provided it will be used \
+                                                  instead of the API to determine if pools have updates. \
+                                                  Defaults to None.
+    """
+    # TODO - Use the database connector to get pool info, if one is provided
+
     for pool in pools:
-        pool.from_api(e621_connector.get_pool(pool.pool_id))
+        # If a database connector was not provided, fetch pool info using the API
+        if not db_connector:
+            pool.from_api(api_connector.get_pool(pool.pool_id))
 
-        local_folder = Path(comic_path) / (pool.folder or pool.name)
+        local_pool_dir = Path(comic_path) / (pool.dir_name or pool.name)
+        if not local_pool_dir.exists():
+            print(f"Folder '{local_pool_dir}' does not exist, creating it")
+            local_pool_dir.mkdir(parents=True, exist_ok=True)
 
-        if not local_folder.exists():
-            logger.warning(f"Folder '{local_folder}' does not exist, creating it")
-            local_folder.mkdir(parents=True, exist_ok=True)
+        # Count the number of local files present, and offset it by the provided local file offset
+        local_num_posts = len([f for f in local_pool_dir.iterdir() if f.is_file()])
+        offset_local_num_posts = local_num_posts + pool.local_offset
 
-        # Download the new pages if the server has more than local
-        local_num_posts = len([f for f in local_folder.iterdir() if f.is_file()])
+        # Calculate the difference between local posts and server posts
+        page_num_diff = pool.post_count - pool.server_deleted - offset_local_num_posts
+        if page_num_diff > 0:
+            print(f"{pool.name} has {page_num_diff} new pages")
 
-        # TODO - Need to use valid posts to cover offsets
-        if local_num_posts < pool.valid_post_count:
-            print(f"{pool.name} has {pool.valid_post_count - local_num_posts} new pages")
+            if not pool.update:
+                continue
 
-            # If the update flag is set, update the comic
-            if pool.update:
-                # TODO - kwargs
-                post_data = e621_connector.get_posts(f"pool:{pool.pool_id}", None, None, pool.name)
-                posts = [Post().from_api(post) for post in post_data]
+            # Fetch all posts from the pool through the API
+            post_data = api_connector.get_posts(
+                search=f"pool:{pool.pool_id}",
+                offset=None,
+                limit=None,
+                desc=pool.name,
+            )
+            posts = [Post().from_api(post) for post in post_data]
 
-                # Remove deleted items from the pool
-                posts = [post for post in posts if not post.flags.deleted]
+            # Enforce the order of posts with respect to the pool info data. This will filter
+            # out removed posts, and handle posts where pool order does not match upload time
+            posts.sort(key=lambda post: pool.post_ids.index(post.post_id))
 
-                # TODO - Can be improved
-                # If the target is a pool, use the pool info to enforce image order
-                # Match the images to the correct order stated by the pool
-                post_id_keyed = {post.post_id: post for post in posts}
-                posts = [post_id_keyed[post_id] for post_id in pool.post_ids if post_id in post_id_keyed]
+            # Remove the URLs which correspond to files already downloaded
+            download_urls = [post.file_info.url for post in posts][offset_local_num_posts:]
+            download_files(
+                desc=f"Downloading {pool.name}",
+                file_urls=download_urls,
+                file_names=get_numbered_file_names(
+                    name=pool.name,
+                    length=len(download_urls),
+                    offset=local_num_posts,
+                ),
+                download_dir=local_pool_dir,
+            )
 
-                # TODO - Set offset? - This can probably be done better
-                index = local_num_posts + (pool.offset if pool.offset > 0 else 0)
-                urls = [post.file_info.url for post in posts][index:]
-
-                file_names = get_numbered_file_names(pool.name, len(urls), local_num_posts)
-
-                download_files(f"Downloading {pool.name}", urls, file_names, local_folder)
-
-        # Report if the comic is ahead or matching the server
-        elif local_num_posts > pool.post_count:
-            print(f"\033[34m{pool.name} is ahead of e6 by {local_num_posts - pool.post_count} pages\033[0m")
+        # Report if the comic is ahead or matching the server count
+        elif page_num_diff < 0:
+            print(f"\033[34m{pool.name} is ahead of e6 by {-page_num_diff} pages\033[0m")
         else:
             print(f"\033[32m{pool.name} is up to date\033[0m")
 
@@ -98,11 +113,14 @@ def comics_update(args: argparse.Namespace, config: Config) -> None:
     with open(comic_yaml_path) as f:
         comic_data = yaml.safe_load(f)
 
+    # TODO
     if e621_data := comic_data.get("e621"):
+        # Sort pools by name, if a name was provided
         pools = sorted(
-            [E621Comic().parse_dict(data) for data in e621_data],
+            [E621Comic().parse_dict(data, overwrite=True) for data in e621_data],
             key=lambda pool: pool.name or "",
         )
 
+        # TODO - Database connector
         e621_connector = E621Connector(config.e621.username, config.e621.api_key)
         e621_comics_update(e621_connector, pools, config.comics.base_path)
