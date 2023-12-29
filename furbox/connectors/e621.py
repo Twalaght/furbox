@@ -124,6 +124,9 @@ class E621Connector:
         search_url = f"{self.base_url}/pools/{str(pool_id)}.json"
         response = self.session.get(search_url)
         response.raise_for_status()
+
+        sleep(self.API_DELAY)
+
         return response.json()
 
 

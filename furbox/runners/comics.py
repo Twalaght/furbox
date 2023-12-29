@@ -136,9 +136,11 @@ def comics_update(args: argparse.Namespace, config: Config) -> None:
             api_key=config.e621.api_key,
         )
 
+        e621_db_connector = E621DbConnector(config.misc.cache_dir or None)
+
         e621_comics_update(
             api_connector=e621_connector,
             pools=pools,
             comic_path=config.comics.base_path,
-            db_connector=E621DbConnector() if args.use_db else None,
+            db_connector=e621_db_connector if args.use_db else None,
         )
