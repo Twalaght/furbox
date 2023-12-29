@@ -15,7 +15,8 @@ import yaml
 
 logger = logging.getLogger(__name__)
 
-_PARSER = cli.create_subparser("comics_update", has_subparsers=True, help="Update local comic files.")
+_PARSER = cli.create_subparser("comics_update", has_subparsers=True, help="update local comic files")
+_PARSER.add_argument("--use-db", action="store_true", help="fetch e621 pool data from a database dump")
 
 
 @dataclass
@@ -44,7 +45,14 @@ def e621_comics_update(api_connector: E621Connector, pools: list[E621Comic],
                                                   instead of the API to determine if pools have updates. \
                                                   Defaults to None.
     """
-    # TODO - Use the database connector to get pool info, if one is provided
+    # If a database connector was provided, fetch pool info using a database dump
+    if db_connector:
+        db_pools = db_connector.get_pools(lambda pool: pool.pool_id in [pool.pool_id for pool in pools])
+        db_pools.sort(key=lambda db_pool: [pool.pool_id for pool in pools].index(db_pool.pool_id))
+
+        # Enrich each pool with the corresponding database information
+        for pool, db_pool in zip(pools, db_pools):
+            pool.parse_dict(db_pool.to_dict())
 
     for pool in pools:
         # If a database connector was not provided, fetch pool info using the API
@@ -83,15 +91,18 @@ def e621_comics_update(api_connector: E621Connector, pools: list[E621Comic],
 
             # Remove the URLs which correspond to files already downloaded
             download_urls = [post.file_info.url for post in posts][offset_local_num_posts:]
+
             download_files(
-                desc=f"Downloading {pool.name}",
-                file_urls=download_urls,
-                file_names=get_numbered_file_names(
-                    name=pool.name,
-                    length=len(download_urls),
-                    offset=local_num_posts,
-                ),
+                url_name_pairs=list(zip(
+                    download_urls,
+                    get_numbered_file_names(
+                        name=pool.name,
+                        length=len(download_urls),
+                        offset=local_num_posts,
+                    ),
+                )),
                 download_dir=local_pool_dir,
+                desc=f"Downloading {pool.name}",
             )
 
         # Report if the comic is ahead or matching the server count
@@ -113,7 +124,6 @@ def comics_update(args: argparse.Namespace, config: Config) -> None:
     with open(comic_yaml_path) as f:
         comic_data = yaml.safe_load(f)
 
-    # TODO
     if e621_data := comic_data.get("e621"):
         # Sort pools by name, if a name was provided
         pools = sorted(
@@ -121,6 +131,14 @@ def comics_update(args: argparse.Namespace, config: Config) -> None:
             key=lambda pool: pool.name or "",
         )
 
-        # TODO - Database connector
-        e621_connector = E621Connector(config.e621.username, config.e621.api_key)
-        e621_comics_update(e621_connector, pools, config.comics.base_path)
+        e621_connector = E621Connector(
+            username=config.e621.username,
+            api_key=config.e621.api_key,
+        )
+
+        e621_comics_update(
+            api_connector=e621_connector,
+            pools=pools,
+            comic_path=config.comics.base_path,
+            db_connector=E621DbConnector() if args.use_db else None,
+        )
