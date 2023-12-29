@@ -43,5 +43,12 @@ class Config(DataclassParser):
         api_key:   str = None
         fav_paths: FavPaths = field(default_factory=FavPaths)
 
+    @dataclass
+    class Misc(DataclassParser):
+        """ Comics config definitions. """
+
+        cache_dir: str = None
+
     comics: Comics = field(default_factory=Comics)
     e621: E621 = field(default_factory=E621)
+    misc: Misc = field(default_factory=Misc)
