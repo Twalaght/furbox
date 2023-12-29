@@ -1,30 +1,41 @@
-""" Module to interact and download through the e621 API. """
+""" Module to interact with the e621 API and download from database dumps. """
+import csv
+import gzip
 import logging
+import os
 from base64 import b64encode
 from time import sleep
-from typing import Any
+from typing import Any, Callable
+
+from furbox.connectors.cache import Cache
+from furbox.connectors.downloader import download_file
+from furbox.models.e621 import Pool
 
 from requests import session
 from tqdm import tqdm
 
+# Parsing posts database with the default field size can fail
+csv.field_size_limit(int(pow(2, 20)))
 logger = logging.getLogger(__name__)
 
 
 class E621Connector:
-    """ Construct an E621Connector object with a username and API key.
+    """ Search for data through the e621 API.
+
+    Constructed with an e621 username and API key.
 
     Args:
-        username (str): E621 username.
-        api_key (str): E621 API key.
+        username (str): e621 username.
+        api_key (str): e621 API key.
     """
 
-    API_DELAY:  float = 1
-    PAGE_LIMIT: int = 320
-    MAX_PAGE:   int = 750
+    API_DELAY:           float = 1
+    PAGE_LIMIT:          int = 320
+    MAX_PAGE:            int = 750
+    PROGRESS_BAR_FORMAT: str = "{desc}: {n_fmt} [{elapsed}]"
 
     base_url:            str = "https://e621.net"
     leave_progress_bars: bool = True
-    progress_bar_format: str = "{desc}: {n_fmt} [{elapsed}]"
 
     def __init__(self, username: str, api_key: str) -> None:
         self.session = session()
@@ -66,10 +77,12 @@ class E621Connector:
             if limit:
                 limit += offset
 
-        progress_bar = tqdm(desc=f"Fetching posts - {desc or search}",
-                            position=0,
-                            bar_format=self.progress_bar_format,
-                            leave=self.leave_progress_bars)
+        progress_bar = tqdm(
+            desc=f"Fetching posts - {desc or search}",
+            position=0,
+            bar_format=self.PROGRESS_BAR_FORMAT,
+            leave=self.leave_progress_bars,
+        )
 
         posts = []
         while True:
@@ -115,7 +128,69 @@ class E621Connector:
 
 
 class E621DbConnector:
-    """ TODO. """
+    """ Connector to download and parse information from the e621 database dumps.
 
-    def __init__(self) -> None:
-        raise NotImplementedError
+    Optionally constructed with a specific cache directory to download database dumps to.
+
+    Args:
+        cache_dir (str | os.PathLike, optional): Cache directory to use when reading and writing database dumps. \
+                                                 Defaults to None, where a default cache location will be used.
+    """
+
+    base_url: str = "https://e621.net"
+
+    def __init__(self, cache_dir: str | os.PathLike = None) -> None:
+        self.session = session()
+        self.cache = Cache(cache_dir)
+
+    def _get_database(self, database_name: str, data_model: type,
+                      filter_condition: Callable[[type], bool] = None) -> list[type]:
+        """ Get dataclass objects from a database dump.
+
+        Args:
+            database_name (str): Name of the database type to download.
+            data_model (type): Dataclass type to parse database entries to.
+            filter_condition (Callable[[type], bool], optional): \
+                Filter function to apply on dataclasses to determine if they will be returned. \
+                Defaults to None, where all dataclass objects will be returned.
+
+        Returns:
+            list[type]: List of dataclass objects.
+        """
+        file_path = self.cache.resolve_path(f"{database_name}.gz")
+        if not self.cache.check(file_path):
+            response = self.session.get(f"{self.base_url}/db_export/")
+            response.raise_for_status()
+
+            all_database_indexes = response.text.splitlines()
+            latest_database = next(line for line in reversed(all_database_indexes) if database_name in line)
+            latest_database_name = latest_database.split('"')[1]
+
+            download_file(
+                url=f"{self.base_url}/db_export/{latest_database_name}",
+                file_path=file_path,
+                desc=f"Fetching database {latest_database_name}",
+                leave_progress_bar=True,
+            )
+
+        database_entries = []
+        with gzip.open(file_path, "rt") as f:
+            for row in csv.DictReader(f):
+                entry = data_model().from_database(row)
+                if not filter_condition or filter_condition(entry):
+                    database_entries.append(entry)
+
+        return database_entries
+
+    def get_pools(self, filter_condition: Callable[[Pool], bool] = None) -> list[Pool]:
+        """ Get pool dataclass objects from a database dump.
+
+        Args:
+            filter_condition (Callable[[Pool], bool], optional): \
+                Filter function to apply on pool dataclasses to determine if it will be returned. \
+                Defaults to None, where all pools will be returned.
+
+        Returns:
+            list[Pool]: List of pool dataclasses.
+        """
+        return self._get_database("pools", Pool, filter_condition)
