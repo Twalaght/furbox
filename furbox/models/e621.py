@@ -15,12 +15,11 @@ Example usage for a post: ::
 """
 import logging
 from copy import deepcopy
-from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any
 
+from attrs import define, field
 from furbox.models.dataclass import DataclassParser
-
 from typing_extensions import Self
 
 logger = logging.getLogger(__name__)
@@ -68,82 +67,82 @@ class E621Model(DataclassParser):
         return f"{base_url}/{md5_hash[:2]}/{md5_hash[2:4]}/{md5_hash}.{extension}"
 
 
-@dataclass
+@define
 class Post(E621Model):
     """ Dataclass representation of an e621 post. """
 
-    @dataclass
+    @define
     class FileInfo(DataclassParser):
         """ File information associated with a post. """
 
-        width:  int = None
-        height: int = None
-        size:   int = None
-        ext:    str = None
-        md5:    str = None
-        url:    str = None
+        width:  int | None = None
+        height: int | None = None
+        size:   int | None = None
+        ext:    str | None = None
+        md5:    str | None = None
+        url:    str | None = None
 
-    @dataclass
+    @define
     class Flags(DataclassParser):
         """ Post status flags. """
 
-        deleted:       bool = None
-        pending:       bool = None
-        flagged:       bool = None
-        rating_locked: bool = None
-        status_locked: bool = None
-        note_locked:   bool = None
+        deleted:       bool | None = None
+        pending:       bool | None = None
+        flagged:       bool | None = None
+        rating_locked: bool | None = None
+        status_locked: bool | None = None
+        note_locked:   bool | None = None
 
-    @dataclass
+    @define
     class Relationships(DataclassParser):
         """ Post relationship information. """
 
-        parent_id:           int = None
-        has_children:        bool = None
-        has_active_children: bool = None
-        children:            list[int] = field(default_factory=list)
+        parent_id:           int | None = None
+        has_children:        bool | None = None
+        has_active_children: bool | None = None
+        children:            list[int] = field(factory=list)
 
-    @dataclass
+    @define
     class Score(DataclassParser):
         """ Post score values. """
 
-        total: int = None
-        up:    int = None
-        down:  int = None
+        total: int | None = None
+        up:    int | None = None
+        down:  int | None = None
 
-    @dataclass
+    @define
     class Tags(DataclassParser):
         """ Post tags by category, and a combined full list. """
 
-        general:    list[str] = field(default_factory=list)
-        artist:     list[str] = field(default_factory=list)
-        copyrights: list[str] = field(default_factory=list)
-        character:  list[str] = field(default_factory=list)
-        species:    list[str] = field(default_factory=list)
-        invalid:    list[str] = field(default_factory=list)
-        meta:       list[str] = field(default_factory=list)
-        lore:       list[str] = field(default_factory=list)
-        all_tags:   list[str] = field(default_factory=list)
+        general:    list[str] = field(factory=list)
+        artist:     list[str] = field(factory=list)
+        copyrights: list[str] = field(factory=list)
+        character:  list[str] = field(factory=list)
+        species:    list[str] = field(factory=list)
+        invalid:    list[str] = field(factory=list)
+        meta:       list[str] = field(factory=list)
+        lore:       list[str] = field(factory=list)
+        all_tags:   list[str] = field(factory=list)
 
-    post_id:       int = None
-    uploader_id:   int = None
-    approver_id:   int = None
-    created_at:    datetime = None
-    updated_at:    datetime = None
-    rating:        str = None
-    description:   str = None
-    fav_count:     int = None
-    comment_count: int = None
-    change_seq:    int = None
-    duration:      float = None
-    is_favorited:  bool = None
-    sources:       list[str] = field(default_factory=list)
-    pools:         list[int] = field(default_factory=list)
-    file_info:     FileInfo = field(default_factory=FileInfo)
-    flags:         Flags = field(default_factory=Flags)
-    relationships: Relationships = field(default_factory=Relationships)
-    score:         Score = field(default_factory=Score)
-    tags:          Tags = field(default_factory=Tags)
+    post_id:       int | None = None
+    uploader_id:   int | None = None
+    approver_id:   int | None = None
+    created_at:    datetime | None = None
+    updated_at:    datetime | None = None
+    rating:        str | None = None
+    description:   str | None = None
+    fav_count:     int | None = None
+    comment_count: int | None = None
+    change_seq:    int | None = None
+    duration:      float | None = None
+    is_favorited:  bool | None = None
+    sources:       list[str] = field(factory=list)
+    pools:         list[int] = field(factory=list)
+    file_info:     FileInfo = field(factory=FileInfo)
+    flags:         Flags = field(factory=Flags)
+    relationships: Relationships = field(factory=Relationships)
+    score:         Score = field(factory=Score)
+    tags:          Tags = field(factory=Tags)
 
     def from_api(self, api_response: dict[str, Any]) -> Self:
         """ Create a post from an API response input.
@@ -242,19 +241,19 @@ class Post(E621Model):
         })
 
 
-@dataclass
+@define
 class Pool(E621Model):
     """ Dataclass representation of an e621 pool. """
 
-    pool_id:     int = None
-    name:        str = None
-    created_at:  datetime = None
-    updated_at:  datetime = None
-    description: str = None
-    active:      bool = None
-    category:    str = None
-    post_ids:    list[int] = field(default_factory=list)
-    post_count:  int = None
+    pool_id:     int | None = None
+    name:        str | None = None
+    created_at:  datetime | None = None
+    updated_at:  datetime | None = None
+    description: str | None = None
+    active:      bool | None = None
+    category:    str | None = None
+    post_ids:    list[int] = field(factory=list)
+    post_count:  int | None = None
 
     def from_api(self, api_response: dict[str, Any]) -> Self:
         """ Create a pool from an API response input.

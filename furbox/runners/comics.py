@@ -2,15 +2,14 @@
 import argparse
 import logging
 import os
-from dataclasses import dataclass
 from pathlib import Path
 
+from attrs import define
 from furbox.connectors.downloader import download_files, get_numbered_file_names
 from furbox.connectors.e621 import E621Connector, E621DbConnector
 from furbox.models.config import Config
 from furbox.models.e621 import Pool, Post
 from furbox.runners import cli
-
 import yaml
 
 logger = logging.getLogger(__name__)
@@ -19,7 +18,7 @@ _PARSER = cli.create_subparser("comics_update", has_subparsers=True, help="updat
 _PARSER.add_argument("--use-db", action="store_true", help="fetch e621 pool data from a database dump")
 
 
-@dataclass
+@define
 class E621Comic(Pool):
     """ Extension of E621 Pool dataclass with local archive information. """
 
@@ -28,7 +27,7 @@ class E621Comic(Pool):
     # Number of posts which have been deleted on server side, and should be skipped over
     server_deleted: int = 0
     # Local directory to download files to, relative to the base comics directory
-    dir_name:       str | os.PathLike = None
+    dir_name:       str | os.PathLike | None = None
     # Update the local files if True, only check for new items without downloading if False
     update:         bool = True
 

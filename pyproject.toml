@@ -9,6 +9,8 @@ description = "Python library for various furry media utilities"
 readme = "README.md"
 
 dependencies = [
+    "attrs",
+    "cattrs",
     "requests",
     "typing-extensions",
 ]

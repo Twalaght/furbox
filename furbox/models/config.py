@@ -9,46 +9,46 @@ Example usage of Config: ::
             config.parse_dict(data)
 """
 import logging
-from dataclasses import dataclass, field
 
+from attrs import define, field
 from furbox.models.dataclass import DataclassParser
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
+@define
 class Config(DataclassParser):
     """ Unified config object for various dataclass namespaces and top level fields. """
 
-    @dataclass
+    @define
     class Comics(DataclassParser):
         """ Comics config definitions. """
 
-        base_path:     str = None
-        database_file: str = None
+        base_path:     str | None = None
+        database_file: str | None = None
 
-    @dataclass
+    @define
     class E621(DataclassParser):
         """ E621 config definitions. """
 
-        @dataclass
+        @define
         class FavPaths(DataclassParser):
             """ E621 favourite path config definitions. """
 
-            safe:         str = None
-            questionable: str = None
-            explicit:     str = None
+            safe:         str | None = None
+            questionable: str | None = None
+            explicit:     str | None = None
 
-        username:  str = None
-        api_key:   str = None
-        fav_paths: FavPaths = field(default_factory=FavPaths)
+        username:  str | None = None
+        api_key:   str | None = None
+        fav_paths: FavPaths = field(factory=FavPaths)
 
-    @dataclass
+    @define
     class Misc(DataclassParser):
         """ Comics config definitions. """
 
-        cache_dir: str = None
+        cache_dir: str | None = None
 
-    comics: Comics = field(default_factory=Comics)
-    e621: E621 = field(default_factory=E621)
-    misc: Misc = field(default_factory=Misc)
+    comics: Comics = field(factory=Comics)
+    e621:   E621 = field(factory=E621)
+    misc:   Misc = field(factory=Misc)
