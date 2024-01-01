@@ -34,8 +34,12 @@ dev = [
     "pydoclint",
 ]
 
-[tool.setuptools]
-packages = ["furbox"]
+[project.scripts]
+furbox = "furbox.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["furbox*"]
 
 [tool.yamlfix]  # YAML auto-formatter - https://lyz-code.github.io/yamlfix/
 allow_duplicate_keys = true
