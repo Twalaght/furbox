@@ -5,26 +5,28 @@ from multiprocessing import Pool, cpu_count
 from pathlib import Path
 from urllib.request import URLopener
 
+from furbox.helpers.utils import Constants, clean_url
+
 import requests
 from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
-BAR_FORMAT = "{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]"
 
-
-def get_numbered_file_names(name: str, length: int, offset: int = 0) -> list[str]:
+def get_numbered_file_names(name: str, length: int, offset: int = 0, zero_pad: int = None) -> list[str]:
     """ Generate files names numbered incrementally.
 
     Args:
         name (str): Base name for all files.
         length (int): Number of file names to generate.
         offset (int, optional): Offset to all file numbers. Defaults to 0.
+        zero_pad (int, optional): Use a fixed length zero padding for file names if provided. \
+                                  Defaults to None.
 
     Returns:
         list[str]: List of generated file names.
     """
-    zero_len = len(str(offset + length + 1))
+    zero_len = zero_pad or len(str(offset + length + 1))
     return [f"{name} {str(num).zfill(zero_len)}" for num in range(offset + 1, offset + length + 1)]
 
 
@@ -49,7 +51,7 @@ def download_file(url: str, file_path: str | os.PathLike, desc: str, leave_progr
             unit="b",
             unit_scale=True,
             unit_divisor=1024,
-            bar_format=BAR_FORMAT,
+            bar_format=Constants.PROGRESS_BAR_FORMAT,
             leave=leave_progress_bar,
         ) as progress:
             for chunk in response.iter_content(chunk_size=(1024 * 128)):
@@ -84,16 +86,17 @@ def download_files(url_name_pairs: list[tuple[str, str]], download_dir: str | os
         download_dir (str | os.PathLike): Directory to download all files to.
         desc (str): Description to use in progress bar.
     """
-    download_args = [
-        (url, Path(download_dir) / f"{name}.{url.split('.')[-1]}")
-        for url, name in url_name_pairs
-    ]
+    # Strip HTTP query string params from the URL and format file names to include extension
+    download_args = []
+    for url, name in url_name_pairs:
+        cleaned_url = clean_url(url)
+        download_args.append((cleaned_url, Path(download_dir) / f"{name}.{cleaned_url.split('.')[-1]}"))
 
     with tqdm(
         desc=desc,
         position=0,
         total=len(url_name_pairs),
-        bar_format=BAR_FORMAT,
+        bar_format=Constants.PROGRESS_BAR_FORMAT,
         leave=True,
     ) as progress_bar:
         # Use a multiprocessing pool to download files in parallel

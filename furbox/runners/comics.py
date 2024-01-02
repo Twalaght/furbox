@@ -4,6 +4,7 @@ import logging
 from pathlib import Path
 
 from furbox.connectors.e621 import E621Connector, E621DbConnector
+from furbox.helpers.custom_comic import CustomComic, custom_comic_update
 from furbox.helpers.e621_comic import E621Comic, e621_comics_update
 from furbox.models.config import Config
 from furbox.runners import cli
@@ -47,3 +48,12 @@ def comics_update(args: argparse.Namespace, config: Config) -> None:
             comic_path=config.comics.base_path,
             db_connector=e621_db_connector if args.use_db else None,
         )
+
+    if custom_data := comic_data.get("custom"):
+        custom_comics = sorted(
+            [CustomComic().parse_dict(data, overwrite=True) for data in custom_data],
+            key=lambda comic: comic.name or "",
+        )
+
+        for custom_comic in custom_comics:
+            custom_comic_update(custom_comic, config.comics.base_path)
