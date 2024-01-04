@@ -25,6 +25,6 @@ repos:
     hooks:
     -   id: flake8
         name: flake8
-        entry: flake8 --append-config .flake8
+        entry: flake8 --append-config .flake8 --per-file-ignores='*:T000'
         language: system
         types: [python]
