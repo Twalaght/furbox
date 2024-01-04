@@ -6,8 +6,10 @@ import requests
 class Constants:
     """ Definitions of constant values. """
 
-    USER_AGENT: str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0"
-    PROGRESS_BAR_FORMAT: str = "{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]"
+    USER_AGENT:                      str = "furbox (github:Twalaght/furbox)"
+    GENERIC_USER_AGENT:              str = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) "
+                                            "Gecko/20100101 Firefox/121.0")
+    PROGRESS_BAR_FORMAT:             str = "{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]"
     UNKNOWN_LEN_PROGRESS_BAR_FORMAT: str = "{desc}: {n_fmt} [{elapsed}]"
 
 
@@ -19,8 +21,8 @@ def clean_url(url: str) -> str:
 def md5_from_url(url: str, session: requests.Session) -> str:
     """ Calculate the MD5 hash for a file from a URL. """
     md5 = hashlib.md5()
-    response = session.get(url, stream=True)
-    for chunk in response.iter_content(chunk_size=(1024 * 128)):
+    response = session.get(url, stream=True, timeout=10)
+    for chunk in response.iter_content(chunk_size=(1024 * 1024)):
         md5.update(chunk)
 
     return md5.hexdigest()

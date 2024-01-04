@@ -4,46 +4,60 @@ import gzip
 import logging
 import os
 from base64 import b64encode
+from enum import Enum
 from time import sleep
 from typing import Any, Callable
 
 from furbox.connectors.cache import Cache
 from furbox.connectors.downloader import download_file
+from furbox.helpers.utils import Constants
 from furbox.models.e621 import Pool
-
 from requests import session
 from tqdm import tqdm
 
-# Parsing posts database with the default field size can fail
-csv.field_size_limit(int(pow(2, 20)))
 logger = logging.getLogger(__name__)
 
 
 class E621Connector:
-    """ Search for data through the e621 API.
+    """ Connector class to interact with the e621 API.
 
-    Constructed with an e621 username and API key.
+    Constructed with an e621 username and API key, and optionally a custom backend URL. Request
+    authentication is provided with basic auth. As such, the username and API key are related and
+    cannot be modified independently.
+
+    Optionally, a `backend_url` argument may be provided to access a different backend, such as e926.
+    A username and API key pair generated for e621 will be valid when accessing e926, and vice versa.
+    All mentions of e621 are interchangeable with e926 when using it as the backend URL.
 
     Args:
         username (str): e621 username.
-        api_key (str): e621 API key.
+        api_key (str): e621 API key generated for the given value of `username`.
+        backend_url (BackendUrl, optional): Base URL to use for all requests. \
+                                            Valid options defined in `E621Connector.BackendUrl`. \
+                                            Defaults to `E621Connector.BackendUrl.E621`.
     """
 
     API_DELAY:           float = 1
     PAGE_LIMIT:          int = 320
     MAX_PAGE:            int = 750
-    PROGRESS_BAR_FORMAT: str = "{desc}: {n_fmt} [{elapsed}]"
 
-    base_url:            str = "https://e621.net"
     leave_progress_bars: bool = True
 
-    def __init__(self, username: str, api_key: str) -> None:
+    class BackendUrl(Enum):
+        """ Valid base URL definitions for the connector. """
+
+        E621 = "https://e621.net"
+        E926 = "https://e926.net"
+
+    def __init__(self, username: str, api_key: str, backend_url: BackendUrl = BackendUrl.E621) -> None:
         self.session = session()
         b64_basic_auth = b64encode(f"{username}:{api_key}".encode("ascii")).decode("ascii")
         self.session.headers.update({
-            "User-Agent": "furbox (github:Twalaght/furbox)",
+            "User-Agent": Constants.USER_AGENT,
             "Authorization": f"Basic {b64_basic_auth}",
         })
+
+        self.base_url = backend_url.value
 
     def get_posts(self, search: str, offset: int | None = None,
                   limit: int | None = None, desc: str = None) -> list[dict[str, Any]]:
@@ -56,7 +70,7 @@ class E621Connector:
             limit (int | None, optional): Maximum number of posts to return. \
                                           Defaults to None, where all posts will be returned.
             desc (str, optional): Description to use in progress bar. Defaults to None, \
-                                  which will use the search query string.
+                                  where the search query string will be used.
 
         Returns:
             list[dict[str, Any]]: Post JSON data matching the search query.
@@ -80,7 +94,7 @@ class E621Connector:
         progress_bar = tqdm(
             desc=f"Fetching posts - {desc or search}",
             position=0,
-            bar_format=self.PROGRESS_BAR_FORMAT,
+            bar_format=Constants.UNKNOWN_LEN_PROGRESS_BAR_FORMAT,
             leave=self.leave_progress_bars,
         )
 
@@ -134,35 +148,42 @@ class E621DbConnector:
     """ Connector to download and parse information from the e621 database dumps.
 
     Optionally constructed with a specific cache directory to download database dumps to.
+    Note that database dumps must be fetched from e621, as e926 does not provide equivalent data.
 
     Args:
-        cache_dir (str | os.PathLike, optional): Cache directory to use when reading and writing database dumps. \
-                                                 Defaults to None, where a default cache location will be used.
+        cache_dir (str | os.PathLike, optional): \
+            Cache directory to use when reading and writing database dumps. \
+            Defaults to None, where a default cache location will be used.
     """
 
-    base_url: str = "https://e621.net"
+    BASE_URL: str = "https://e621.net"
+
+    class DatabaseType(Enum):
+        """ List of valid database types available from the e621 exports.
+
+        TODO - Not an exhaustive list, other types not yet implemented.
+        """
+
+        post = "posts"
+        pool = "pools"
 
     def __init__(self, cache_dir: str | os.PathLike = None) -> None:
         self.session = session()
         self.cache = Cache(cache_dir)
 
-    def _get_database(self, database_name: str, data_model: type,
-                      filter_condition: Callable[[type], bool] = None) -> list[type]:
-        """ Get dataclass objects from a database dump.
+    def _get_database(self, database_name: DatabaseType) -> os.PathLike:
+        """ Download a database dump if no valid cached file exists.
 
         Args:
-            database_name (str): Name of the database type to download.
-            data_model (type): Dataclass type to parse database entries to.
-            filter_condition (Callable[[type], bool], optional): \
-                Filter function to apply on dataclasses to determine if they will be returned. \
-                Defaults to None, where all dataclass objects will be returned.
+            database_name (DatabaseType): Name of database to download. \
+                                          Valid options defined in `E621DbConnector.DatabaseType`.
 
         Returns:
-            list[type]: List of dataclass objects.
+            os.PathLike: Path to the database file on disk.
         """
-        file_path = self.cache.resolve_path(f"{database_name}.gz")
+        file_path = self.cache.resolve_path(f"{database_name.value}.gz")
         if not self.cache.check(file_path):
-            response = self.session.get(f"{self.base_url}/db_export/")
+            response = self.session.get(f"{self.BASE_URL}/db_export/")
             response.raise_for_status()
 
             all_database_indexes = response.text.splitlines()
@@ -170,14 +191,34 @@ class E621DbConnector:
             latest_database_name = latest_database.split('"')[1]
 
             download_file(
-                url=f"{self.base_url}/db_export/{latest_database_name}",
+                url=f"{self.BASE_URL}/db_export/{latest_database_name}",
                 file_path=file_path,
                 desc=f"Fetching database {latest_database_name}",
                 leave_progress_bar=True,
             )
 
+        return file_path
+
+    def _parse_database(self, file_path: os.PathLike, data_model: type,
+                        filter_condition: Callable[[type], bool] = None) -> list[type]:
+        """ Parse a database file into dataclass objects, optionally subject to a filter condition.
+
+        Args:
+            file_path (os.PathLike): Path to the database file on disk.
+            data_model (type): Dataclass type to parse database rows into.
+            filter_condition (Callable[[type], bool], optional): \
+                Filter function to apply on dataclasses to determine if they will be returned. \
+                Defaults to None, where all dataclass objects will be returned.
+
+        Returns:
+            list[type]: List of dataclass objects parsed from the database.
+        """
         database_entries = []
         with gzip.open(file_path, "rt") as f:
+            # Specifically when parsing the "posts" database, using the default CSV field size will throw
+            # an error. The default size is 2^17, and increasing this to 2^20 allows the CSV to be parsed
+            csv.field_size_limit(int(pow(2, 20)))
+
             for row in csv.DictReader(f):
                 entry = data_model().from_database(row)
                 if not filter_condition or filter_condition(entry):
@@ -196,4 +237,5 @@ class E621DbConnector:
         Returns:
             list[Pool]: List of pool dataclasses.
         """
-        return self._get_database("pools", Pool, filter_condition)
+        file_path = self._get_database(self.DatabaseType.pool)
+        return self._parse_database(file_path, Pool, filter_condition)
