@@ -32,6 +32,8 @@ dev = [
     "pep8-naming",
     "pre-commit",
     "pydoclint",
+    "pytest",
+    "pytest-cov",
 ]
 
 [project.scripts]
