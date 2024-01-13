@@ -22,8 +22,9 @@ extend-ignore =
     D210,
     # I201   - Missing newline between import groups
     I201,
-    # T000   - Todo note found
-    T000,
 
 # Pydoclint config
 style = google
+
+# Treat furbox imports as a local package
+application_import_names = furbox
