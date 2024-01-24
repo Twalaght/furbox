@@ -8,12 +8,13 @@ from enum import Enum
 from time import sleep
 from typing import Any, Callable
 
+import requests
+from tqdm import tqdm
+
 from furbox.connectors.cache import Cache
 from furbox.connectors.downloader import download_file
 from furbox.helpers.utils import Constants
 from furbox.models.e621 import Pool
-from requests import session
-from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class E621Connector:
         E926 = "https://e926.net"
 
     def __init__(self, username: str, api_key: str, backend_url: BackendUrl = BackendUrl.E621) -> None:
-        self.session = session()
+        self.session = requests.session()
         b64_basic_auth = b64encode(f"{username}:{api_key}".encode("ascii")).decode("ascii")
         self.session.headers.update({
             "User-Agent": Constants.USER_AGENT,
@@ -168,7 +169,7 @@ class E621DbConnector:
         pool = "pools"
 
     def __init__(self, cache_dir: str | os.PathLike = None) -> None:
-        self.session = session()
+        self.session = requests.session()
         self.cache = Cache(cache_dir)
 
     def _get_database(self, database_name: DatabaseType) -> os.PathLike:

@@ -5,10 +5,10 @@ from multiprocessing import Pool, cpu_count
 from pathlib import Path
 from urllib.request import URLopener
 
-from furbox.helpers.utils import Constants, clean_url
-
 import requests
 from tqdm import tqdm
+
+from furbox.helpers.utils import Constants, clean_url
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,9 @@ def get_numbered_file_names(name: str, length: int, offset: int = 0, zero_pad: i
     Returns:
         list[str]: List of generated file names.
     """
-    zero_len = zero_pad or len(str(offset + length + 1))
+    # Calculate the standard zero padding, which will be at least 2 unless a custom pad is provided
+    page_len = len(str(offset + length + 1))
+    zero_len = zero_pad or max(2, page_len)
     return [f"{name} {str(num).zfill(zero_len)}" for num in range(offset + 1, offset + length + 1)]
 
 

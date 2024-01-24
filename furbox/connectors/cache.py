@@ -26,7 +26,8 @@ class Cache():
     Values provided for `expiry_hours` and `expiry_minutes` are additive, and will not override each other.
 
     Args:
-        cache_dir (str | os.PathLike, optional): Directory to use as the base cache location. Defaults to None.
+        cache_dir (str | os.PathLike, optional): Custom directory to use as the base cache location. \
+                                                 Defaults to None.
         expiry_hours (int, optional): Hours a cache file is valid for. Defaults to 24.
         expiry_minutes (int, optional): Minutes a cache file is valid for. Defaults to 0.
 
@@ -49,14 +50,7 @@ class Cache():
             raise ValueError(f"Cache directory '{cache_dir}' exists but is not a directory")
 
     def check(self, file_path: str | os.PathLike) -> bool:
-        """ Check if a file has a valid cache entry.
-
-        Args:
-            file_path (str | os.PathLike): File path to check for a cache entry.
-
-        Returns:
-            bool: True if the file has a valid cache entry, False otherwise.
-        """
+        """ Return True if the file path has a current valid cache entry, False otherwise. """
         if not file_path.exists():
             return False
 
@@ -68,12 +62,5 @@ class Cache():
         return True
 
     def resolve_path(self, file_path: str | os.PathLike) -> os.PathLike:
-        """ Resolve a file path relative to the cache directory.
-
-        Args:
-            file_path (str | os.PathLike): File path to resolve.
-
-        Returns:
-            os.PathLike: Full file path relative to the cache directory.
-        """
+        """ Resolve a file path relative to the cache directory. """
         return self.cache_dir / file_path

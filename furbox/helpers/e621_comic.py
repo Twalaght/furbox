@@ -1,5 +1,26 @@
 
-""" Module to provide functionality for comic updates on e621 pools. """
+""" Module to provide functionality for comic updates on e621 pools.
+
+Example usage of e621 comic: ::
+
+    pools = [
+        E621Comic(
+            pool_id: 23079
+            name: Duncan & Eddie
+        )
+    ]
+
+    e621_connector = E621Connector(
+        username=config.e621.username,
+        api_key=config.e621.api_key,
+    )
+
+    e621_comics_update(
+        api_connector=e621_connector,
+        pools=pools,
+        comic_path=config.comics.base_path,
+    )
+"""
 import logging
 import os
 from pathlib import Path
@@ -8,7 +29,6 @@ from attrs import define
 from furbox.connectors.downloader import download_files, get_numbered_file_names
 from furbox.connectors.e621 import E621Connector, E621DbConnector
 from furbox.models.e621 import Pool, Post
-
 
 logger = logging.getLogger(__name__)
 
