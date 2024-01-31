@@ -172,17 +172,17 @@ class E621DbConnector:
         self.session = requests.session()
         self.cache = Cache(cache_dir)
 
-    def _get_database(self, database_name: DatabaseType) -> os.PathLike:
+    def _get_database(self, database_name: str) -> os.PathLike:
         """ Download a database dump if no valid cached file exists.
 
         Args:
-            database_name (DatabaseType): Name of database to download. \
-                                          Valid options defined in `E621DbConnector.DatabaseType`.
+            database_name (str): Name of database to download. \
+                                 Valid options defined in `E621DbConnector.DatabaseType`.
 
         Returns:
             os.PathLike: Path to the database file on disk.
         """
-        file_path = self.cache.resolve_path(f"{database_name.value}.gz")
+        file_path = self.cache.resolve_path(f"{database_name}.gz")
         if not self.cache.check(file_path):
             response = self.session.get(f"{self.BASE_URL}/db_export/")
             response.raise_for_status()
@@ -238,5 +238,5 @@ class E621DbConnector:
         Returns:
             list[Pool]: List of pool dataclasses.
         """
-        file_path = self._get_database(self.DatabaseType.pool)
+        file_path = self._get_database(self.DatabaseType.pool.value)
         return self._parse_database(file_path, Pool, filter_condition)
