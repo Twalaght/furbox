@@ -29,6 +29,7 @@ from attrs import define
 from furbox.connectors.downloader import download_files, get_numbered_file_names
 from furbox.connectors.e621 import E621Connector, E621DbConnector
 from furbox.models.e621 import Pool, Post
+from furbox.utils.progress_bar import progress
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,8 @@ def e621_comics_update(api_connector: E621Connector, pools: list[E621Comic],
         for pool, db_pool in zip(pools, db_pools):
             pool.parse_dict(db_pool.to_dict())
 
+    # Start a progress bar, and iterate through each pool
+    pool_progress_id = progress.add_task("Updating e621 pools", total=len(pools))
     for pool in pools:
         # If a database connector was not provided, fetch pool info using the API
         if not db_connector:
@@ -88,6 +91,7 @@ def e621_comics_update(api_connector: E621Connector, pools: list[E621Comic],
             print(f"{pool.name} has {page_num_diff} new pages")
 
             if not pool.update:
+                progress.advance(pool_progress_id, 1)
                 continue
 
             # Fetch all posts from the pool through the API
@@ -116,7 +120,7 @@ def e621_comics_update(api_connector: E621Connector, pools: list[E621Comic],
                     ),
                 )),
                 download_dir=local_pool_dir,
-                desc=f"Downloading {pool.name}",
+                description=f"Downloading {pool.name}",
             )
 
         # Report if the comic is ahead or matching the server count
@@ -124,3 +128,7 @@ def e621_comics_update(api_connector: E621Connector, pools: list[E621Comic],
             print(f"\033[34m{pool.name} is ahead of e6 by {-page_num_diff} pages\033[0m")
         else:
             print(f"\033[32m{pool.name} is up to date\033[0m")
+
+        progress.advance(pool_progress_id, 1)
+
+    progress.finish(pool_progress_id, persist=True)

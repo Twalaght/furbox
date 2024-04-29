@@ -6,11 +6,12 @@ from pathlib import Path
 from attrs import define, field
 from bs4 import BeautifulSoup
 from bs4.element import Tag
+import requests
+from tqdm import tqdm
+
 from furbox.connectors.downloader import download_files, get_numbered_file_names
 from furbox.helpers.utils import Constants, clean_url, md5_from_file, md5_from_url
 from furbox.models.dataclass import DataclassParser
-import requests
-from tqdm import tqdm
 
 logger = logging.getLogger(__name__)
 
@@ -149,5 +150,5 @@ def custom_comic_update(custom_comic: CustomComic, comic_path: str | os.PathLike
             ),
         )),
         download_dir=local_comic_dir,
-        desc=f"Downloading {custom_comic.name}",
+        description=f"Downloading {custom_comic.name}",
     )

@@ -9,6 +9,7 @@ import requests
 from tqdm import tqdm
 
 from furbox.helpers.utils import Constants, clean_url
+from furbox.utils.progress_bar import progress
 
 logger = logging.getLogger(__name__)
 
@@ -79,14 +80,14 @@ def parallel_download(args: tuple[str, str | os.PathLike]) -> None:
     download(*args)
 
 
-def download_files(url_name_pairs: list[tuple[str, str]], download_dir: str | os.PathLike, desc: str) -> None:
+def download_files(url_name_pairs: list[tuple[str, str]], download_dir: str | os.PathLike, description: str) -> None:
     """ Download multiple files from a list of URL name pairs.
 
     Args:
         url_name_pairs (list[tuple[str, str]]): List of tuples containing the URL to download from, \
                                                 and the file name to write to.
         download_dir (str | os.PathLike): Directory to download all files to.
-        desc (str): Description to use in progress bar.
+        description (str): Description to use in progress bar.
     """
     # Strip HTTP query string params from the URL and format file names to include extension
     download_args = []
@@ -94,13 +95,8 @@ def download_files(url_name_pairs: list[tuple[str, str]], download_dir: str | os
         cleaned_url = clean_url(url)
         download_args.append((cleaned_url, Path(download_dir) / f"{name}.{cleaned_url.split('.')[-1]}"))
 
-    with tqdm(
-        desc=desc,
-        position=0,
-        total=len(url_name_pairs),
-        bar_format=Constants.PROGRESS_BAR_FORMAT,
-        leave=True,
-    ) as progress_bar:
-        # Use a multiprocessing pool to download files in parallel
-        for _ in Pool(cpu_count()).imap(parallel_download, download_args, chunksize=1):
-            progress_bar.update()
+    download_progress_id = progress.add_task(description, total=len(url_name_pairs))
+    for _ in Pool(cpu_count()).imap(parallel_download, download_args, chunksize=1):
+        progress.advance(download_progress_id, 1)
+
+    progress.finish(download_progress_id)
