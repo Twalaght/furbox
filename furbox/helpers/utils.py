@@ -9,6 +9,8 @@ class Constants:
     USER_AGENT:                      str = "furbox (github:Twalaght/furbox)"
     GENERIC_USER_AGENT:              str = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) "
                                             "Gecko/20100101 Firefox/121.0")
+
+    # TODO - May remove these now TQDM bars are no longer in use
     PROGRESS_BAR_FORMAT:             str = "{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]"
     UNKNOWN_LEN_PROGRESS_BAR_FORMAT: str = "{desc}: {n_fmt} [{elapsed}]"
 

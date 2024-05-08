@@ -6,9 +6,8 @@ from pathlib import Path
 from urllib.request import URLopener
 
 import requests
-from tqdm import tqdm
 
-from furbox.helpers.utils import Constants, clean_url
+from furbox.helpers.utils import clean_url
 from furbox.utils.progress_bar import progress
 
 logger = logging.getLogger(__name__)
@@ -33,13 +32,13 @@ def get_numbered_file_names(name: str, length: int, offset: int = 0, zero_pad: i
     return [f"{name} {str(num).zfill(zero_len)}" for num in range(offset + 1, offset + length + 1)]
 
 
-def download_file(url: str, file_path: str | os.PathLike, desc: str, leave_progress_bar: bool) -> None:
+def download_file(url: str, file_path: str | os.PathLike, description: str, leave_progress_bar: bool) -> None:
     """ Download a file from a URL with a progress bar.
 
     Args:
         url (str): URL to download the file from.
         file_path (str | os.PathLike): File path to save the downloaded file to.
-        desc (str): Description to use in progress bar.
+        description (str): Description to use in progress bar.
         leave_progress_bar (bool): Leave the progress bar display after the download has finished.
     """
     # Download the file as a stream, such that progress can be accurately displayed
@@ -47,19 +46,17 @@ def download_file(url: str, file_path: str | os.PathLike, desc: str, leave_progr
     response.raise_for_status()
 
     with open(file_path, "wb") as f:
-        with tqdm(
-            desc=desc,
-            position=0,
+        download_progress_id = progress.add_task(
+            description=description,
             total=int(response.headers.get("content-length", 0)),
-            unit="b",
-            unit_scale=True,
-            unit_divisor=1024,
-            bar_format=Constants.PROGRESS_BAR_FORMAT,
-            leave=leave_progress_bar,
-        ) as progress:
-            for chunk in response.iter_content(chunk_size=(1024 * 128)):
-                progress.update(len(chunk))
-                f.write(chunk)
+            is_file=True,
+        )
+
+        for chunk in response.iter_content(chunk_size=(1024 * 128)):
+            progress.advance(download_progress_id, len(chunk))
+            f.write(chunk)
+
+        progress.finish(download_progress_id)
 
 
 def parallel_download(args: tuple[str, str | os.PathLike]) -> None:

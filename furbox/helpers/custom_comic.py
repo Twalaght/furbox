@@ -7,11 +7,11 @@ from attrs import define, field
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 import requests
-from tqdm import tqdm
 
 from furbox.connectors.downloader import download_files, get_numbered_file_names
 from furbox.helpers.utils import Constants, clean_url, md5_from_file, md5_from_url
 from furbox.models.dataclass import DataclassParser
+from furbox.utils.progress_bar import progress
 
 logger = logging.getLogger(__name__)
 
@@ -107,32 +107,31 @@ def custom_comic_update(custom_comic: CustomComic, comic_path: str | os.PathLike
             logger.error(f"File '{last_file}' must follow the format 'series_name page_number.ext'")
 
     images = []
-    with tqdm(
-        desc=f"Searching pages - {custom_comic.name}",
-        position=0,
-        bar_format=Constants.UNKNOWN_LEN_PROGRESS_BAR_FORMAT,
-        leave=True,
-    ) as progress:
-        while True:
-            response = session.get(page)
-            response.raise_for_status()
-            soup = BeautifulSoup(response.text, "html.parser")
+    search_progress_id = progress.add_task(
+        description=f"Searching pages - {custom_comic.name}",
+    )
+    while True:
+        response = session.get(page)
+        response.raise_for_status()
+        soup = BeautifulSoup(response.text, "html.parser")
 
-            image_urls = [tag["src"] for tag in extract_from_soup(soup, custom_comic.images)]
-            image_urls = [clean_url(url) for url in image_urls]
+        image_urls = [tag["src"] for tag in extract_from_soup(soup, custom_comic.images)]
+        image_urls = [clean_url(url) for url in image_urls]
 
-            # If any of the image hashes match the local file, all new pages have been found
-            if target_hash in [md5_from_url(url, session) for url in image_urls]:
-                break
+        # If any of the image hashes match the local file, all new pages have been found
+        if target_hash in [md5_from_url(url, session) for url in image_urls]:
+            break
 
-            images = image_urls + images
-            progress.update(len(image_urls))
+        images = image_urls + images
+        progress.advance(len(image_urls))
 
-            # Find the backlink to the previous page if it exists
-            try:
-                page = extract_from_soup(soup, custom_comic.backlink)["href"]
-            except Exception:
-                break
+        # Find the backlink to the previous page if it exists
+        try:
+            page = extract_from_soup(soup, custom_comic.backlink)["href"]
+        except Exception:
+            break
+
+    progress.finish(search_progress_id)
 
     if not images:
         print(f"\033[32m{custom_comic.name} is up to date\033[0m")
