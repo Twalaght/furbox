@@ -1,6 +1,17 @@
 name: Linting
 on: [push, pull_request]
 jobs:
+    flake8:
+        runs-on: ubuntu-latest
+        steps:
+        -   name: Check out repository
+            uses: actions/checkout@v4
+        -   name: Set up Python
+            uses: actions/setup-python@v5
+        -   name: Install Python project and dependencies
+            run: pip install .[dev]
+        -   name: Run flake8
+            run: flake8 furbox tests
     ruff:
         runs-on: ubuntu-latest
         steps:
