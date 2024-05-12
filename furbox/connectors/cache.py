@@ -19,7 +19,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 
 
-class Cache():
+class Cache:
     """ Construct a cache, optionally in a specific directory and with a custom expiry length.
 
     If no base directory is specified, `$XDG_CACHE_HOME` will be used if set, otherwise `$HOME/.cache`.

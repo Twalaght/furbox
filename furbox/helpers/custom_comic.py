@@ -3,13 +3,13 @@ import logging
 import os
 from pathlib import Path
 
+import requests
 from attrs import define, field
 from bs4 import BeautifulSoup
 from bs4.element import Tag
-import requests
 
 from furbox.connectors.downloader import download_files, get_numbered_file_names
-from furbox.helpers.utils import Constants, clean_url, md5_from_file, md5_from_url
+from furbox.helpers.utils import clean_url, Constants, md5_from_file, md5_from_url
 from furbox.models.dataclass import DataclassParser
 from furbox.utils.progress_bar import progress
 
@@ -104,7 +104,7 @@ def custom_comic_update(custom_comic: CustomComic, comic_path: str | os.PathLike
         try:
             file_name_offset = int(last_file.stem.split(" ")[-1])
         except Exception:
-            logger.error(f"File '{last_file}' must follow the format 'series_name page_number.ext'")
+            logger.exception(f"File '{last_file}' must follow the format 'series_name page_number.ext'")
 
     images = []
     search_progress_id = progress.add_task(
@@ -146,7 +146,7 @@ def custom_comic_update(custom_comic: CustomComic, comic_path: str | os.PathLike
                 length=len(images),
                 offset=file_name_offset,
                 zero_pad=4,
-            ),
+            ), strict=True,
         )),
         download_dir=local_comic_dir,
         description=f"Downloading {custom_comic.name}",

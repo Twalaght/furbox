@@ -115,6 +115,7 @@ ignore = [
     "EM",  # flake8-errmsg
     "FBT", # flake8-boolean-trap
     "G",   # flake8-logging-format
+    "S",   # flake8-bandit
     "T20", # flake8-print
     "TD",  # flake8-todos
 
@@ -123,6 +124,8 @@ ignore = [
     "ANN101", # Missing type annotation for `self` in method
     "ANN102", # Missing type annotation for `cls` in classmethod
     "ANN401", # Dynamically typed expressions (typing.Any) are disallowed
+
+    "BLE001", # Do not catch blind exception
 
     "C901", # Structure is too complex
 
@@ -133,6 +136,8 @@ ignore = [
     "E701", # Multiple statements on one line (colon)
 
     "FA102", # Missing `from __future__ import annotations`
+
+    "FIX002", # Line contains TODO, consider resolving the issue
 
     "PLR0912", # Too many branches
     "PLR0913", # Too many arguments in function definition
@@ -147,7 +152,6 @@ ignore = [
     "RUF013", # PEP 484 prohibits implicit Optional
 
     "SLF001", # Private member accessed (TODO - Can eventually disable)
-    "S105", # Possible hardcoded password assigned to variable
 
     "TRY003", # Avoid specifying long messages outside the exception class
     "TRY301", # Abstract raise to an inner function

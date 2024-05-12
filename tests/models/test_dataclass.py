@@ -5,8 +5,8 @@ import os
 from pathlib import Path
 from typing import Any
 
-from attrs import define, field
 import pytest
+from attrs import define, field
 
 from furbox.models.dataclass import DataclassParser
 

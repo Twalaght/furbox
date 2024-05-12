@@ -13,14 +13,16 @@ Example usage for a post: ::
             for row in csv.DictReader(f)
         ]
 """
+import itertools
 import logging
 from copy import deepcopy
 from datetime import datetime
 from typing import Any
 
 from attrs import define, field
-from furbox.models.dataclass import DataclassParser
 from typing_extensions import Self
+
+from furbox.models.dataclass import DataclassParser
 
 logger = logging.getLogger(__name__)
 
@@ -162,7 +164,7 @@ class Post(E621Model):
         data["file_info"] = data.pop("file")
 
         # Combine all unique existing tags into the "all_tags" category
-        data["tags"]["all_tags"] = list(set(sum(data["tags"].values(), [])))
+        data["tags"]["all_tags"] = list(set(itertools.chain.from_iterable(data["tags"].values())))
 
         # Convert ISO datetime strings to datetime objects
         data["created_at"] = self.parse_datetime(data["created_at"])

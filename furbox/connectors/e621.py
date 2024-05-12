@@ -133,7 +133,7 @@ class E621Connector:
         Returns:
             dict[str, Any]: Pool JSON data.
         """
-        search_url = f"{self.base_url}/pools/{str(pool_id)}.json"
+        search_url = f"{self.base_url}/pools/{pool_id!s}.json"
         response = self.session.get(search_url)
         response.raise_for_status()
 

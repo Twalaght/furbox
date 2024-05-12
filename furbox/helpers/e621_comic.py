@@ -26,6 +26,7 @@ import os
 from pathlib import Path
 
 from attrs import define
+
 from furbox.connectors.downloader import download_files, get_numbered_file_names
 from furbox.connectors.e621 import E621Connector, E621DbConnector
 from furbox.models.e621 import Pool, Post
@@ -66,7 +67,7 @@ def e621_comics_update(api_connector: E621Connector, pools: list[E621Comic],
         db_pools.sort(key=lambda db_pool: [pool.pool_id for pool in pools].index(db_pool.pool_id))
 
         # Enrich each pool with the corresponding database information
-        for pool, db_pool in zip(pools, db_pools):
+        for pool, db_pool in zip(pools, db_pools, strict=True):
             pool.parse_dict(db_pool.to_dict())
 
     # Start a progress bar, and iterate through each pool
@@ -117,7 +118,7 @@ def e621_comics_update(api_connector: E621Connector, pools: list[E621Comic],
                         name=pool.name,
                         length=len(download_urls),
                         offset=local_num_posts,
-                    ),
+                    ), strict=True,
                 )),
                 download_dir=local_pool_dir,
                 description=f"Downloading {pool.name}",

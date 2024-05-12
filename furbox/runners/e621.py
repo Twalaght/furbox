@@ -17,4 +17,5 @@ _DOWNLOAD_PARSER.add_argument("search_query", help="search query or pool number 
 @cli.entrypoint(parser=_DOWNLOAD_PARSER)
 def download(args: argparse.Namespace, config: Config) -> None:
     """ TODO. """
-    return
+    del args, config
+    raise NotImplementedError
