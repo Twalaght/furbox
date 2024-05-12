@@ -8,6 +8,8 @@ jobs:
             uses: actions/checkout@v4
         -   name: Set up Python
             uses: actions/setup-python@v5
+            with:
+                python-version-file: 'pyproject.toml'
         -   name: Install Python project and dependencies
             run: pip install .[dev]
         -   name: Run flake8
