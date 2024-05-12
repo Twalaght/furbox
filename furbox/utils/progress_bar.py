@@ -21,7 +21,7 @@ class ProgressBar(NamedTuple):
     task_id: int
 
 
-class CustomProgress():
+class CustomProgress:
     """ Initialise with a Live display instance and an empty list of progress bars. """
 
     def __init__(self) -> None:

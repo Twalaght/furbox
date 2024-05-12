@@ -11,6 +11,7 @@ Example usage of Config: ::
 import logging
 
 from attrs import define, field
+
 from furbox.models.dataclass import DataclassParser
 
 logger = logging.getLogger(__name__)

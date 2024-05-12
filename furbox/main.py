@@ -4,12 +4,12 @@ import logging
 import os
 from pathlib import Path
 
+import yaml
+
 from furbox.models.config import Config
 from furbox.runners import cli
 from furbox.runners.comics import comics_update
 from furbox.runners.e621 import download
-
-import yaml
 
 logger = logging.getLogger(__name__)
 

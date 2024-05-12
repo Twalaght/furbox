@@ -1,7 +1,7 @@
 """ Module to download files and helper functions related to download operations. """
 import logging
 import os
-from multiprocessing import Pool, cpu_count
+from multiprocessing import cpu_count, Pool
 from pathlib import Path
 from urllib.request import URLopener
 
@@ -56,7 +56,7 @@ def download_file(url: str, file_path: str | os.PathLike, description: str, leav
             progress.advance(download_progress_id, len(chunk))
             f.write(chunk)
 
-        progress.finish(download_progress_id)
+        progress.finish(download_progress_id, persist=leave_progress_bar)
 
 
 def parallel_download(args: tuple[str, str | os.PathLike]) -> None:
