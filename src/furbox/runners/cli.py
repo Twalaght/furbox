@@ -11,9 +11,14 @@ Example usage of CLI entrypoints: ::
     cli.run(parse_args(), Config())
 """
 import argparse
+import importlib
+import pkgutil
+from types import ModuleType
 from typing import Any, Callable
 
 from furbox.models.config import Config
+
+EntryFunc = Callable[[argparse.Namespace, Config], Any]
 
 __ROOT_PARSER = argparse.ArgumentParser()
 __ROOT_SUBPARSERS = __ROOT_PARSER.add_subparsers(required=True)
@@ -62,11 +67,24 @@ def run(args: argparse.Namespace, config: Config) -> None:
 
 def entrypoint(parser: argparse.ArgumentParser) -> Callable[[argparse.Namespace, Config], Any]:
     """ Decorate a function as the default entrypoint for a given parser. """
-    entrypoint_func = Callable[[argparse.Namespace, Config], Any]
-
-    def entrypoint_decorator(entry_func: entrypoint_func) -> entrypoint_func:
+    def entrypoint_decorator(entry_func: EntryFunc) -> EntryFunc:
         """ Set default entry function for the parser. """
         parser.set_defaults(_entry_func=entry_func)
         return entry_func
 
     return entrypoint_decorator
+
+
+def import_package_modules(package: ModuleType) -> None:
+    """ Import all modules of a package recursively.
+
+    Args:
+        package (ModuleType): Base package to import all modules from.
+    """
+    for _, name, is_pkg in pkgutil.walk_packages(package.__path__):
+        # Resolve the full name of the module and import it.
+        module = importlib.import_module(f"{package.__name__}.{name}")
+
+        # If the module itself is a package, import recursively.
+        if is_pkg:
+            import_package_modules(module)

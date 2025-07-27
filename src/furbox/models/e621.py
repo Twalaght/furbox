@@ -17,10 +17,9 @@ import itertools
 import logging
 from copy import deepcopy
 from datetime import datetime
-from typing import Any
+from typing import Any, Self
 
 from attrs import define, field
-from typing_extensions import Self
 
 from furbox.models.dataclass import DataclassParser
 
