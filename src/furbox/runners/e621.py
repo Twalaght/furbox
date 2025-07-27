@@ -3,7 +3,7 @@ import argparse
 import logging
 
 from furbox.models.config import Config
-from furbox.runners import cli
+from furbox.utils import cli
 
 logger = logging.getLogger(__name__)
 

@@ -9,7 +9,7 @@ from furbox.connectors.e621 import E621Connector, E621DbConnector
 from furbox.helpers.custom_comic import custom_comic_update, CustomComic
 from furbox.helpers.e621_comic import e621_comics_update, E621Comic
 from furbox.models.config import Config
-from furbox.runners import cli
+from furbox.utils import cli
 
 logger = logging.getLogger(__name__)
 

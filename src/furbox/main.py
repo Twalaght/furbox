@@ -8,7 +8,7 @@ import yaml
 
 from furbox import runners
 from furbox.models.config import Config
-from furbox.runners import cli
+from furbox.utils import cli
 
 cli.import_package_modules(runners)
 
