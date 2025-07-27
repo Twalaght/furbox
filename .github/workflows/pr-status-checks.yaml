@@ -19,7 +19,7 @@ jobs:
         -   name: Install Python project and dependencies
             run: pip install .[dev]
         -   name: Run flake8
-            run: flake8 furbox tests
+            run: flake8 src tests
     ruff:
         name: Ruff linting
         runs-on: ubuntu-latest
