@@ -1,51 +1,52 @@
-[build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "furbox"
-version = "0.1"
-
+version = "0.1.0"
 description = "Python library for various furry media utilities"
 readme = "README.md"
-
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 
 dependencies = [
-    "attrs",
-    "cattrs",
-    "requests",
-    "typing-extensions",
+    "attrs>=25.3.0",
+    "bs4>=0.0.2",
+    "cattrs>=25.1.1",
+    "pyyaml>=6.0.2",
+    "requests>=2.32.4",
+    "rich>=14.1.0",
+    "typing-extensions>=4.14.1",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "flake8",
-    "flake8-annotations",
-    "flake8-assertive",
-    "flake8-builtins",
-    "flake8-bugbear",
-    "flake8-commas",
-    "flake8-comprehensions",
-    "flake8-docstrings",
-    "flake8-eradicate",
-    "flake8-function-order",
-    "flake8-import-order",
-    "flake8-pyproject",
-    "flake8-todo",
-    "pep8-naming",
-    "pre-commit",
-    "pydoclint",
-    "pytest",
-    "pytest-cov",
+    "flake8-annotations>=3.1.1",
+    "flake8-assertive>=2.1.0",
+    "flake8-bugbear>=24.12.12",
+    "flake8-builtins>=2.5.0",
+    "flake8-commas>=4.0.0",
+    "flake8-comprehensions>=3.16.0",
+    "flake8-docstrings>=1.7.0",
+    "flake8-eradicate>=1.5.0",
+    "flake8-function-order>=0.0.5",
+    "flake8-import-order>=0.19.2",
+    "flake8-pyproject>=1.2.3",
+    "flake8-todo>=0.7",
+    "flake8>=7.3.0",
+    "pep8-naming>=0.15.1",
+    "pre-commit>=4.2.0",
+    "pydoclint>=0.6.6",
+    "pytest-cov>=6.2.1",
+    "pytest>=8.4.1",
+    "ruff>=0.12.5",
 ]
 
 [project.scripts]
 furbox = "furbox.main:main"
 
+[build-system]
+requires = ["setuptools>=80.9.0"]
+build-backend = "setuptools.build_meta"
+
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["furbox*"]
+where = ["src"]
 
 [tool.yamlfix]  # YAML auto-formatter - https://lyz-code.github.io/yamlfix/
 allow_duplicate_keys = true
