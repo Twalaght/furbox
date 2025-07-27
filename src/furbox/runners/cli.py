@@ -2,7 +2,8 @@
 
 Example usage of CLI entrypoints: ::
 
-    _PARSER = cli.create_subparser(command="awoo", has_subparsers=True)
+    _BASE_PARSER = cli.create_subparser(command="grouped_parsers", has_subparsers=True)
+    _PARSER = _BASE_PARSER.add_parser("awoo", parents=[cli.base_leaf_parser()])
 
     @entrypoint(_PARSER)
     def awoo() -> None:
@@ -16,11 +17,13 @@ import pkgutil
 from types import ModuleType
 from typing import Any, Callable
 
+from rich_argparse import RichHelpFormatter
+
 from furbox.models.config import Config
 
 EntryFunc = Callable[[argparse.Namespace, Config], Any]
 
-__ROOT_PARSER = argparse.ArgumentParser()
+__ROOT_PARSER = argparse.ArgumentParser(formatter_class=RichHelpFormatter)
 __ROOT_SUBPARSERS = __ROOT_PARSER.add_subparsers(required=True)
 __ROOT_PARSER.set_defaults(_entry_func=None)
 
@@ -49,7 +52,7 @@ def create_subparser(command: str, has_subparsers: bool, *args, **kwargs) -> arg
     """
     # Only lowest level subparsers should inherit from the parser template
     parents = [base_leaf_parser()] if not has_subparsers else []
-    return __ROOT_SUBPARSERS.add_parser(command, *args, **kwargs, parents=parents)
+    return __ROOT_SUBPARSERS.add_parser(command, *args, **kwargs, formatter_class=RichHelpFormatter, parents=parents)
 
 
 def parse_args(*args, **kwargs) -> argparse.Namespace:
@@ -76,11 +79,7 @@ def entrypoint(parser: argparse.ArgumentParser) -> Callable[[argparse.Namespace,
 
 
 def import_package_modules(package: ModuleType) -> None:
-    """ Import all modules of a package recursively.
-
-    Args:
-        package (ModuleType): Base package to import all modules from.
-    """
+    """ Recursively import all modules of a given package. """
     for _, name, is_pkg in pkgutil.walk_packages(package.__path__):
         # Resolve the full name of the module and import it.
         module = importlib.import_module(f"{package.__name__}.{name}")
