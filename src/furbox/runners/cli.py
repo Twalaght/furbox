@@ -18,6 +18,8 @@ from typing import Any, Callable
 
 from furbox.models.config import Config
 
+EntryFunc = Callable[[argparse.Namespace, Config], Any]
+
 __ROOT_PARSER = argparse.ArgumentParser()
 __ROOT_SUBPARSERS = __ROOT_PARSER.add_subparsers(required=True)
 __ROOT_PARSER.set_defaults(_entry_func=None)
@@ -65,14 +67,13 @@ def run(args: argparse.Namespace, config: Config) -> None:
 
 def entrypoint(parser: argparse.ArgumentParser) -> Callable[[argparse.Namespace, Config], Any]:
     """ Decorate a function as the default entrypoint for a given parser. """
-    entrypoint_func = Callable[[argparse.Namespace, Config], Any]
-
-    def entrypoint_decorator(entry_func: entrypoint_func) -> entrypoint_func:
+    def entrypoint_decorator(entry_func: EntryFunc) -> EntryFunc:
         """ Set default entry function for the parser. """
         parser.set_defaults(_entry_func=entry_func)
         return entry_func
 
     return entrypoint_decorator
+
 
 def import_package_modules(package: ModuleType) -> None:
     """ Import all modules of a package recursively.

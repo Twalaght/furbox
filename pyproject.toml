@@ -56,19 +56,11 @@ preserve_quotes = true
 # Using a plugin to support pyproject.toml - see https://github.com/john-hen/Flake8-pyproject
 [tool.flake8]
 max-line-length = 120
-per-file-ignores = [
-    # Required for main CLI paradigm, as modules must be imported for subparser config
-    "furbox/main.py:F401",  # F401 - Module imported but unused
 
-    # TODO - This may be removed when using new pytest paradigm
-    # Required for all test files, due to the boilerplate for relative imports
-    "tests/*:E402",  # E402 - Module level import not at top of file
-
-    # Pytest handles relative imports for "tests", but flake8 will still flag it
-    "tests/**:E902,F401,F811",  # E902 - IOError
-                                # F401 - Module imported but unused
-                                # F811 - Redefinition of unused variable
+exclude = [
+    "scripts",
 ]
+
 extend-ignore = [
     "ANN002",  # Missing type annotation for *args
     "ANN003",  # Missing type annotation for **kwargs
@@ -78,6 +70,8 @@ extend-ignore = [
     "D104",    # Missing docstring in public package
     "D107",    # Missing docstring in __init__
     "D210",    # No whitespaces allowed surrounding docstring text
+    "DOC601",  # Class docstring contains fewer class attributes than actual class attributes.
+    "DOC603",  # Class docstring attributes are different from actual class attributes.
     "I201",    # Missing newline between import groups
     "T000",    # Todo note found
 ]
