@@ -8,11 +8,10 @@ Example usage of Config: ::
             data = yaml.safe_load(f)
             config.parse_dict(data)
 """
-import logging
-
 from attrs import define, field
 
 from furbox.models.dataclass import DataclassParser
+from furbox.utils import logging
 
 logger = logging.getLogger(__name__)
 

@@ -14,7 +14,6 @@ Example usage for a post: ::
         ]
 """
 import itertools
-import logging
 from copy import deepcopy
 from datetime import datetime
 from typing import Any, Self
@@ -22,6 +21,7 @@ from typing import Any, Self
 from attrs import define, field
 
 from furbox.models.dataclass import DataclassParser
+from furbox.utils import logging
 
 logger = logging.getLogger(__name__)
 

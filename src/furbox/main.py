@@ -1,6 +1,5 @@
 """ Main entrypoint to perform setup and transfer control to a runner's entry function. """
 
-import logging
 import os
 from pathlib import Path
 
@@ -8,7 +7,7 @@ import yaml
 
 from furbox import runners
 from furbox.models.config import Config
-from furbox.utils import cli
+from furbox.utils import cli, logging
 
 cli.import_package_modules(runners)
 
@@ -51,6 +50,7 @@ def get_config_path() -> os.PathLike:
 def main() -> None:
     """ TODO. """
     args = cli.parse_args()
+    logging.setup_logger(args.verbose)
 
     with open(get_config_path()) as f:
         data = yaml.safe_load(f)

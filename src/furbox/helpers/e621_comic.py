@@ -21,7 +21,6 @@ Example usage of e621 comic: ::
         comic_path=config.comics.base_path,
     )
 """
-import logging
 import os
 from pathlib import Path
 
@@ -30,6 +29,7 @@ from attrs import define
 from furbox.connectors.downloader import download_files, get_numbered_file_names
 from furbox.connectors.e621 import E621Connector, E621DbConnector
 from furbox.models.e621 import Pool, Post
+from furbox.utils import logging
 from furbox.utils.progress_bar import progress
 
 logger = logging.getLogger(__name__)

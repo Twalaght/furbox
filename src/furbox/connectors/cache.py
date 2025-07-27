@@ -11,10 +11,11 @@ Example usage of Cache: ::
     with open(file_path, "r") as f:
         post_data = f.read()
 """
-import logging
 import os
 from datetime import datetime, timedelta
 from pathlib import Path
+
+from furbox.utils import logging
 
 logger = logging.getLogger(__name__)
 

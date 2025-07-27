@@ -1,9 +1,8 @@
 """ TODO. """
 import argparse
-import logging
 
 from furbox.models.config import Config
-from furbox.utils import cli
+from furbox.utils import cli, logging
 
 logger = logging.getLogger(__name__)
 

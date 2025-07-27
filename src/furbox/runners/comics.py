@@ -1,6 +1,5 @@
 """ Runner to update and synchronise collections of comics. """
 import argparse
-import logging
 from pathlib import Path
 
 import yaml
@@ -9,7 +8,7 @@ from furbox.connectors.e621 import E621Connector, E621DbConnector
 from furbox.helpers.custom_comic import custom_comic_update, CustomComic
 from furbox.helpers.e621_comic import e621_comics_update, E621Comic
 from furbox.models.config import Config
-from furbox.utils import cli
+from furbox.utils import cli, logging
 
 logger = logging.getLogger(__name__)
 

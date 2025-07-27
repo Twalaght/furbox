@@ -1,5 +1,4 @@
 """ Module to provide functionality for comic updates on custom web comics. """
-import logging
 import os
 from pathlib import Path
 
@@ -11,6 +10,7 @@ from bs4.element import Tag
 from furbox.connectors.downloader import download_files, get_numbered_file_names
 from furbox.helpers.utils import clean_url, Constants, md5_from_file, md5_from_url
 from furbox.models.dataclass import DataclassParser
+from furbox.utils import logging
 from furbox.utils.progress_bar import progress
 
 logger = logging.getLogger(__name__)

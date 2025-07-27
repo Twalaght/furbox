@@ -1,5 +1,4 @@
 """ Module to download files and helper functions related to download operations. """
-import logging
 import os
 from multiprocessing import cpu_count, Pool
 from pathlib import Path
@@ -8,6 +7,7 @@ from urllib.request import URLopener
 import requests
 
 from furbox.helpers.utils import clean_url
+from furbox.utils import logging
 from furbox.utils.progress_bar import progress
 
 logger = logging.getLogger(__name__)

@@ -1,7 +1,6 @@
 """ Module to interact with the e621 API and download from database dumps. """
 import csv
 import gzip
-import logging
 import os
 from base64 import b64encode
 from enum import Enum
@@ -14,6 +13,7 @@ from furbox.connectors.cache import Cache
 from furbox.connectors.downloader import download_file
 from furbox.helpers.utils import Constants
 from furbox.models.e621 import Pool
+from furbox.utils import logging
 from furbox.utils.progress_bar import progress
 
 logger = logging.getLogger(__name__)

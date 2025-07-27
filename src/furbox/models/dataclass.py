@@ -1,6 +1,5 @@
 """ Base class for attrs dataclasses to add standardised functionality. """
 import datetime
-import logging
 import os
 from pathlib import Path
 from typing import Any
@@ -8,6 +7,8 @@ from typing import Any
 import attrs
 import cattr
 from typing_extensions import Self
+
+from furbox.utils import logging
 
 logger = logging.getLogger(__name__)
 
