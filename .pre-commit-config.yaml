@@ -1,6 +1,6 @@
 repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v5.0.0
     hooks:
     -   id: check-json
     -   id: check-merge-conflict
@@ -8,22 +8,41 @@ repos:
     -   id: check-shebang-scripts-are-executable
     -   id: check-toml
     -   id: check-yaml
+    -   id: name-tests-test
+        args: [--pytest-test-first]
     -   id: end-of-file-fixer
     -   id: mixed-line-ending
-        args: [--fix, lf]
+        args: [--fix, auto]
     -   id: pretty-format-json
         args: [--autofix, --indent, "4"]
--   repo: https://github.com/lyz-code/yamlfix
-    rev: 1.16.0
-    hooks:
-    -   id: yamlfix
--   repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.11.0
-    hooks:
-    -   id: markdownlint-cli2
 -   repo: https://github.com/PyCQA/flake8
     rev: 7.0.0
     hooks:
     -   id: flake8
+        # pflake8 is required for pre-commit, as regular flake8 does not respect pyproject.toml config
+        # See https://github.com/csachs/pyproject-flake8/issues/3
         entry: pflake8
         additional_dependencies: [pyproject-flake8]
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.5
+    hooks:
+    -   id: ruff-check
+-   repo: https://github.com/lyz-code/yamlfix
+    rev: 1.17.0
+    hooks:
+    -   id: yamlfix
+        additional_dependencies: [maison>=2.0.0]
+-   repo: https://github.com/DavidAnson/markdownlint-cli2
+    rev: v0.11.0
+    hooks:
+    -   id: markdownlint-cli2
+# Pytest is defined as a local hook, as recommended by pre-commit author
+# https://github.com/pre-commit/pre-commit/issues/761#issuecomment-394167542
+-   repo: local
+    hooks:
+    -   id: pytest
+        name: pytest
+        entry: pytest tests
+        language: system
+        types: [python]
+        pass_filenames: false
