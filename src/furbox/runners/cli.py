@@ -11,6 +11,9 @@ Example usage of CLI entrypoints: ::
     cli.run(parse_args(), Config())
 """
 import argparse
+import importlib
+import pkgutil
+from types import ModuleType
 from typing import Any, Callable
 
 from furbox.models.config import Config
@@ -70,3 +73,17 @@ def entrypoint(parser: argparse.ArgumentParser) -> Callable[[argparse.Namespace,
         return entry_func
 
     return entrypoint_decorator
+
+def import_package_modules(package: ModuleType) -> None:
+    """ Import all modules of a package recursively.
+
+    Args:
+        package (ModuleType): Base package to import all modules from.
+    """
+    for _, name, is_pkg in pkgutil.walk_packages(package.__path__):
+        # Resolve the full name of the module and import it.
+        module = importlib.import_module(f"{package.__name__}.{name}")
+
+        # If the module itself is a package, import recursively.
+        if is_pkg:
+            import_package_modules(module)

@@ -56,10 +56,7 @@ class Cache:
 
         cache_expiry_time = timedelta(minutes=self.expiry_minutes)
         last_modified = datetime.fromtimestamp(file_path.lstat().st_mtime)
-        if (datetime.now() - last_modified) > cache_expiry_time and self.expiry_minutes >= 0:
-            return False
-
-        return True
+        return not (datetime.now() - last_modified) > cache_expiry_time and self.expiry_minutes >= 0
 
     def resolve_path(self, file_path: str | os.PathLike) -> os.PathLike:
         """ Resolve a file path relative to the cache directory. """
