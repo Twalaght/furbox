@@ -1,54 +1,46 @@
-""" Module to handle access and parsing of all application configuration.
+""" Module to handle access and parsing of all configuration.
 
 Example usage of Config: ::
 
-    config = Config().parse_dict(input_dict)
-    for config_file in config_files:
-        with open(config_file) as f:
-            data = yaml.safe_load(f)
-            config.parse_dict(data)
+    config = Config().load_from_yaml(input_dict)
+    api_key = config.e621.api_key
 """
-from attrs import define, field
+from pathlib import Path
 
-from furbox.models.dataclass import DataclassParser
+from furbox.models.base_model import BaseModel
 from furbox.utils import logging
 
 logger = logging.getLogger(__name__)
 
 
-@define
-class Config(DataclassParser):
+class Config(BaseModel):
     """ Unified config object for various dataclass namespaces and top level fields. """
 
-    @define
-    class Comics(DataclassParser):
+    class Comics(BaseModel):
         """ Comics config definitions. """
 
-        base_path:     str | None = None
-        database_file: str | None = None
+        base_path:     Path
+        database_file: Path
 
-    @define
-    class E621(DataclassParser):
+    class E621(BaseModel):
         """ E621 config definitions. """
 
-        @define
-        class FavPaths(DataclassParser):
+        class FavPaths(BaseModel):
             """ E621 favourite path config definitions. """
 
-            safe:         str | None = None
-            questionable: str | None = None
-            explicit:     str | None = None
+            safe:         Path
+            questionable: Path
+            explicit:     Path
 
-        username:  str | None = None
-        api_key:   str | None = None
-        fav_paths: FavPaths = field(factory=FavPaths)
+        username:  str
+        api_key:   str
+        fav_paths: FavPaths | None = None
 
-    @define
-    class Misc(DataclassParser):
+    class Misc(BaseModel):
         """ Comics config definitions. """
 
-        cache_dir: str | None = None
+        cache_dir: Path | None = None
 
-    comics: Comics = field(factory=Comics)
-    e621:   E621 = field(factory=E621)
-    misc:   Misc = field(factory=Misc)
+    e621:   E621 | None = None
+    comics: Comics | None = None
+    misc:   Misc = Misc()
