@@ -66,6 +66,234 @@ class E621Model(BaseModel):
         return f"{base_url}/{md5_hash[:2]}/{md5_hash[2:4]}/{md5_hash}.{extension}"
 
 
+
+class NewPost(BaseModel):
+    class FileInfo(BaseModel):
+        """ File information associated with a post. """
+
+        width:  int
+        height: int
+        size:   int
+        ext:    str
+        md5:    str
+        url:    str
+
+    class Flags(BaseModel):
+        """ Post status flags. """
+
+        deleted:       bool
+        pending:       bool
+        flagged:       bool
+        rating_locked: bool
+        status_locked: bool
+        note_locked:   bool
+
+    class Relationships(BaseModel):
+        """ Post relationship information. """
+
+        parent_id:           int | None = None
+        has_children:        bool | None = None
+        has_active_children: bool | None = None
+        children:            list[int] = []
+
+    class Score(BaseModel):
+        """ Post score values. """
+
+        total: int | None = None
+        up:    int | None = None
+        down:  int | None = None
+
+    class Tags(BaseModel):
+        """ Post tags by category, and a combined full list. """
+
+        general:    list[str] = []
+        artist:     list[str] = []
+        copyrights: list[str] = []
+        character:  list[str] = []
+        species:    list[str] = []
+        invalid:    list[str] = []
+        meta:       list[str] = []
+        lore:       list[str] = []
+        all_tags:   list[str] = []
+
+    post_id:       int
+    uploader_id:   int | None = None
+    approver_id:   int | None = None
+    created_at:    datetime
+    updated_at:    datetime
+    rating:        str  # TODO - STREUM
+    description:   str
+    fav_count:     int
+    comment_count: int
+    change_seq:    int
+    duration:      float | None = None
+    is_favorited:  bool
+    sources:       list[str] = []
+    pools:         list[int] = []
+    file_info:     FileInfo
+    flags:         Flags
+    relationships: Relationships
+    score:         Score
+    tags:          Tags
+
+
+    @classmethod
+    def from_api(cls, api_response: dict[str, Any]) -> Self:
+        """ Create a post from an API response input.
+
+        Args:
+            api_response (dict[str, Any]): API JSON response data for a single post.
+
+        Returns:
+            Self: Reference to the dataclass itself.
+        """
+        # Copy the API response such that the input data is not mangled during the remap
+        data = deepcopy(api_response)
+
+        # Rename response fields to match their corresponding dataclass fields
+        data["tags"]["copyrights"] = data["tags"].pop("copyright")
+        data["post_id"] = data.pop("id")
+        data["file_info"] = data.pop("file")
+
+        # Combine all unique existing tags into the "all_tags" category
+        data["tags"]["all_tags"] = list(set(itertools.chain.from_iterable(data["tags"].values())))
+
+        # Convert ISO datetime strings to datetime objects
+        # data["created_at"] = self.parse_datetime(data["created_at"])
+        # data["updated_at"] = self.parse_datetime(data["updated_at"])
+
+        # Explicitly drop some API data which is not parsed to a post dataclass
+        data.pop("preview", None)
+        data.pop("sample", None)
+        data.pop("locked_tags", None)
+        data.pop("has_notes", None)
+
+        return cls.model_validate(data)
+        # return self.parse_dict(data)
+
+
+
+
+
+
+
+
+
+
+
+
+class NewPost(BaseModel):
+    class FileInfo(BaseModel):
+        """ File information associated with a post. """
+
+        width:  int
+        height: int
+        size:   int
+        ext:    str
+        md5:    str
+        url:    str
+
+    class Flags(BaseModel):
+        """ Post status flags. """
+
+        deleted:       bool
+        pending:       bool
+        flagged:       bool
+        rating_locked: bool
+        status_locked: bool
+        note_locked:   bool
+
+    class Relationships(BaseModel):
+        """ Post relationship information. """
+
+        parent_id:           int | None = None
+        has_children:        bool | None = None
+        has_active_children: bool | None = None
+        children:            list[int] = []
+
+    class Score(BaseModel):
+        """ Post score values. """
+
+        total: int | None = None
+        up:    int | None = None
+        down:  int | None = None
+
+    class Tags(BaseModel):
+        """ Post tags by category, and a combined full list. """
+
+        general:    list[str] = []
+        artist:     list[str] = []
+        copyrights: list[str] = []
+        character:  list[str] = []
+        species:    list[str] = []
+        invalid:    list[str] = []
+        meta:       list[str] = []
+        lore:       list[str] = []
+        all_tags:   list[str] = []
+
+    post_id:       int
+    uploader_id:   int | None = None
+    approver_id:   int | None = None
+    created_at:    datetime
+    updated_at:    datetime
+    rating:        str  # TODO - STREUM
+    description:   str
+    fav_count:     int
+    comment_count: int
+    change_seq:    int
+    duration:      float | None = None
+    is_favorited:  bool
+    sources:       list[str] = []
+    pools:         list[int] = []
+    file_info:     FileInfo
+    flags:         Flags
+    relationships: Relationships
+    score:         Score
+    tags:          Tags
+
+
+    @classmethod
+    def from_api(cls, api_response: dict[str, Any]) -> Self:
+        """ Create a post from an API response input.
+
+        Args:
+            api_response (dict[str, Any]): API JSON response data for a single post.
+
+        Returns:
+            Self: Reference to the dataclass itself.
+        """
+        # Copy the API response such that the input data is not mangled during the remap
+        data = deepcopy(api_response)
+
+        # Rename response fields to match their corresponding dataclass fields
+        data["tags"]["copyrights"] = data["tags"].pop("copyright")
+        data["post_id"] = data.pop("id")
+        data["file_info"] = data.pop("file")
+
+        # Combine all unique existing tags into the "all_tags" category
+        data["tags"]["all_tags"] = list(set(itertools.chain.from_iterable(data["tags"].values())))
+
+        # Convert ISO datetime strings to datetime objects
+        # data["created_at"] = self.parse_datetime(data["created_at"])
+        # data["updated_at"] = self.parse_datetime(data["updated_at"])
+
+        # Explicitly drop some API data which is not parsed to a post dataclass
+        data.pop("preview", None)
+        data.pop("sample", None)
+        data.pop("locked_tags", None)
+        data.pop("has_notes", None)
+
+        return cls.model_validate(data)
+        # return self.parse_dict(data)
+
+
+
+
+
+
+
+
+
 class Post(E621Model):
     """ Dataclass representation of an e621 post. """
 
@@ -170,69 +398,69 @@ class Post(E621Model):
 
         return cls(**data)
 
-    def from_database(self, database_entry: dict[str, str]) -> Self:
-        """ Create a post from a database CSV row input.
+    # def from_database(self, database_entry: dict[str, str]) -> Self:
+    #     """ Create a post from a database CSV row input.
 
-        Args:
-            database_entry (dict[str, str]): Database CSV entry for a single post.
+    #     Args:
+    #         database_entry (dict[str, str]): Database CSV entry for a single post.
 
-        Returns:
-            Self: Reference to the dataclass itself.
-        """
-        file_info = {
-            "width":  int(database_entry["image_width"]),
-            "height": int(database_entry["image_height"]),
-            "size":   int(database_entry["file_size"]),
-            "ext":    database_entry["file_ext"],
-            "md5":    database_entry["md5"],
-            "url":    self.source_url_from_hash(database_entry["md5"], database_entry["file_ext"]),
-        }
+    #     Returns:
+    #         Self: Reference to the dataclass itself.
+    #     """
+    #     file_info = {
+    #         "width":  int(database_entry["image_width"]),
+    #         "height": int(database_entry["image_height"]),
+    #         "size":   int(database_entry["file_size"]),
+    #         "ext":    database_entry["file_ext"],
+    #         "md5":    database_entry["md5"],
+    #         "url":    self.source_url_from_hash(database_entry["md5"], database_entry["file_ext"]),
+    #     }
 
-        flags = {
-            "deleted":       self.char_to_bool(database_entry["is_deleted"]),
-            "pending":       self.char_to_bool(database_entry["is_pending"]),
-            "flagged":       self.char_to_bool(database_entry["is_flagged"]),
-            "rating_locked": self.char_to_bool(database_entry["is_rating_locked"]),
-            "status_locked": self.char_to_bool(database_entry["is_status_locked"]),
-            "note_locked":   self.char_to_bool(database_entry["is_note_locked"]),
-        }
+    #     flags = {
+    #         "deleted":       self.char_to_bool(database_entry["is_deleted"]),
+    #         "pending":       self.char_to_bool(database_entry["is_pending"]),
+    #         "flagged":       self.char_to_bool(database_entry["is_flagged"]),
+    #         "rating_locked": self.char_to_bool(database_entry["is_rating_locked"]),
+    #         "status_locked": self.char_to_bool(database_entry["is_status_locked"]),
+    #         "note_locked":   self.char_to_bool(database_entry["is_note_locked"]),
+    #     }
 
-        relationships = {
-            "parent_id": int(parent_id) if (parent_id := database_entry["parent_id"]) else None,
-        }
+    #     relationships = {
+    #         "parent_id": int(parent_id) if (parent_id := database_entry["parent_id"]) else None,
+    #     }
 
-        score = {
-            "total": int(database_entry["score"]),
-            "up":    int(database_entry["up_score"]),
-            "down":  int(database_entry["down_score"]),
-        }
+    #     score = {
+    #         "total": int(database_entry["score"]),
+    #         "up":    int(database_entry["up_score"]),
+    #         "down":  int(database_entry["down_score"]),
+    #     }
 
-        all_tags = []
-        for tag_type in ["tag_string", "locked_tags"]:
-            if tag_string := database_entry[tag_type]:
-                all_tags.extend(tag_string.split())
+    #     all_tags = []
+    #     for tag_type in ["tag_string", "locked_tags"]:
+    #         if tag_string := database_entry[tag_type]:
+    #             all_tags.extend(tag_string.split())
 
-        return self.parse_dict({
-            "post_id":       int(database_entry["id"]),
-            "uploader_id":   int(database_entry["uploader_id"]),
-            "approver_id":   int(approver_id) if (approver_id := database_entry.get("approver_id")) else None,
-            "created_at":    self.parse_datetime(database_entry["created_at"]),
-            "updated_at":    self.parse_datetime(database_entry["updated_at"]),
-            "rating":        database_entry["rating"],
-            "description":   database_entry["description"],
-            "fav_count":     int(database_entry["fav_count"]),
-            "comment_count": int(database_entry["comment_count"]),
-            "change_seq":    int(database_entry["change_seq"]),
-            "duration":      float(duration) if (duration := database_entry.get("duration")) else None,
-            "is_favorited":  None,
-            "sources":       database_entry["source"].splitlines(),
-            "pools":         None,
-            "file_info":     file_info,
-            "flags":         flags,
-            "relationships": relationships,
-            "score":         score,
-            "tags":          {"all_tags": all_tags},
-        })
+    #     return self.parse_dict({
+    #         "post_id":       int(database_entry["id"]),
+    #         "uploader_id":   int(database_entry["uploader_id"]),
+    #         "approver_id":   int(approver_id) if (approver_id := database_entry.get("approver_id")) else None,
+    #         "created_at":    self.parse_datetime(database_entry["created_at"]),
+    #         "updated_at":    self.parse_datetime(database_entry["updated_at"]),
+    #         "rating":        database_entry["rating"],
+    #         "description":   database_entry["description"],
+    #         "fav_count":     int(database_entry["fav_count"]),
+    #         "comment_count": int(database_entry["comment_count"]),
+    #         "change_seq":    int(database_entry["change_seq"]),
+    #         "duration":      float(duration) if (duration := database_entry.get("duration")) else None,
+    #         "is_favorited":  None,
+    #         "sources":       database_entry["source"].splitlines(),
+    #         "pools":         None,
+    #         "file_info":     file_info,
+    #         "flags":         flags,
+    #         "relationships": relationships,
+    #         "score":         score,
+    #         "tags":          {"all_tags": all_tags},
+    #     })
 
 
 class Pool(E621Model):

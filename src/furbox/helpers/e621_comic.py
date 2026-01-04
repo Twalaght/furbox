@@ -29,7 +29,7 @@ from fluffless.utils import logging
 from furbox.connectors.downloader import download_files, get_numbered_file_names
 from furbox.connectors.e621 import E621Connector, E621DbConnector
 from furbox.models.e621 import Pool, Post
-from furbox.utils.progress_bar import progress
+# from furbox.utils.progress_bar import progress
 
 logger = logging.getLogger(__name__)
 

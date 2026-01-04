@@ -8,7 +8,7 @@ from urllib.request import URLopener
 import requests
 
 from furbox.helpers.utils import clean_url
-from furbox.utils.progress_bar import progress
+# from furbox.utils.progress_bar import progress
 
 logger = logging.getLogger(__name__)
 

@@ -15,7 +15,7 @@ from furbox.connectors.cache import Cache
 from furbox.connectors.downloader import download_file
 from furbox.helpers.utils import Constants
 from furbox.models.e621 import Pool
-from furbox.utils.progress_bar import progress
+# from furbox.utils.progress_bar import progress
 
 logger = logging.getLogger(__name__)
 
@@ -93,36 +93,39 @@ class E621Connector:
             if limit:
                 limit += offset
 
-        posts_progress_bar = progress.add_task(
-            description=f"Fetching posts - {desc or search}",
-        )
+        # posts_progress_bar = progress.add_task(
+        #     description=f"Fetching posts - {desc or search}",
+        # )
 
         posts = []
-        while True:
-            # Setting page to "b{post_id}" will show posts before the given ID. This is done for accurate
-            # pagination, as posts will move between pages if any are created or deleted between requests
-            page = f"b{posts[-1]['id']}" if posts else page
+        with ProgressBar(description=f"Fetching posts - {desc or search}") as progress:
+            while True:
+                # Setting page to "b{post_id}" will show posts before the given ID. This is done for accurate
+                # pagination, as posts will move between pages if any are created or deleted between requests
+                page = f"b{posts[-1]['id']}" if posts else page
 
-            # Request each page of posts through the API
-            search_url = f"{self.base_url}/posts.json?limit={self.PAGE_LIMIT}&tags={search}&page={page}"
-            response = self.session.get(search_url)
-            response.raise_for_status()
+                # Request each page of posts through the API
+                search_url = f"{self.base_url}/posts.json?limit={self.PAGE_LIMIT}&tags={search}&page={page}"
+                response = self.session.get(search_url)
+                response.raise_for_status()
 
-            response_posts = response.json()["posts"]
-            posts.extend(response_posts)
-            progress.advance(posts_progress_bar, len(response_posts))
+                response_posts = response.json()["posts"]
+                posts.extend(response_posts)
+                
+                # logger.print(len(response_posts))
+                progress.advance(len(response_posts))
 
-            # Break if a partial response is received, as it must be the final page
-            if len(response_posts) < self.PAGE_LIMIT:
-                break
+                # Break if a partial response is received, as it must be the final page
+                if len(response_posts) < self.PAGE_LIMIT:
+                    break
 
-            # Break if a limit was provided and the number of posts exceeds it
-            if limit and len(posts) >= limit:
-                break
+                # Break if a limit was provided and the number of posts exceeds it
+                if limit and len(posts) >= limit:
+                    break
 
-            sleep(self.API_DELAY)
+                sleep(self.API_DELAY)
 
-        progress.finish(posts_progress_bar)
+        # progress.finish(posts_progress_bar)
         return posts[offset:limit]
 
     def get_pool(self, pool_id: int | str) -> dict[str, Any]:
@@ -155,6 +158,7 @@ class E621DbConnector:
             Defaults to None, where a default cache location will be used.
     """
 
+    # TODO - Has to actually respect if e926 condition is set.
     BASE_URL: str = "https://e621.net"
 
     class DatabaseType(Enum):
@@ -189,6 +193,7 @@ class E621DbConnector:
             latest_database = next(line for line in reversed(all_database_indexes) if database_name in line)
             latest_database_name = latest_database.split('"')[1]
 
+            # TODO - Download to a temp location then move
             download_file(
                 url=f"{self.BASE_URL}/db_export/{latest_database_name}",
                 file_path=file_path,

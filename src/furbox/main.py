@@ -32,8 +32,27 @@ def get_config_path() -> Path:
     ):
         return config_path
 
-    config_root = os.getenv("XDG_CONFIG_HOME", Path.home() / ".config")
-    if (config_path := config_root / "furbox" / config_file_name).exists():
+    if Confirm(f"No config detected at '{config_path}', create with dummy values?"):
+        default_config = Config(
+            e621=Config.E621(
+                username="e621_username",
+                api_key="e621_api_key",
+            ),
+            comics=Config.Comics(
+                base_path="base_path_to_comics",
+                database_file="comics_database_yaml_file",
+            ),
+        )
+
+        with config_path.open("w") as f:
+            f.write(yaml.dump(
+                data=default_config.model_dump(),
+                indent=4,
+                explicit_start=False,
+            ))
+
+        logger.print(f"Default config created at '{config_path}'")
+
         return config_path
 
     # TODO - Handle case where no config exists.

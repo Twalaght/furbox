@@ -37,6 +37,7 @@ class Config(BaseModel):
 
         username:  str
         api_key:   str
+        use_e926:  bool = False
         fav_paths: FavPaths | None = None
 
     class Misc(BaseModel):
