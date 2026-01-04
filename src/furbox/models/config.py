@@ -1,4 +1,4 @@
-""" Module to handle access and parsing of all application configuration.
+""" TODO - Module to handle access and parsing of all application configuration.
 
 Example usage of Config: ::
 
@@ -8,48 +8,42 @@ Example usage of Config: ::
             data = yaml.safe_load(f)
             config.parse_dict(data)
 """
-import logging
+from pathlib import Path
 
-from attrs import define, field
-
-from furbox.models.dataclass import DataclassParser
+from fluffless.models.base_model import BaseModel
+from fluffless.utils import logging
 
 logger = logging.getLogger(__name__)
 
 
-@define
-class Config(DataclassParser):
-    """ Unified config object for various dataclass namespaces and top level fields. """
+class Config(BaseModel):
+    """ Model definition of main config object. """
 
-    @define
-    class Comics(DataclassParser):
+    class Comics(BaseModel):
         """ Comics config definitions. """
 
-        base_path:     str | None = None
-        database_file: str | None = None
+        base_path:     Path
+        database_file: str
 
-    @define
-    class E621(DataclassParser):
+    class E621(BaseModel):
         """ E621 config definitions. """
 
-        @define
-        class FavPaths(DataclassParser):
+        class FavPaths(BaseModel):
             """ E621 favourite path config definitions. """
 
-            safe:         str | None = None
-            questionable: str | None = None
-            explicit:     str | None = None
+            safe:         str
+            questionable: str
+            explicit:     str
 
-        username:  str | None = None
-        api_key:   str | None = None
-        fav_paths: FavPaths = field(factory=FavPaths)
+        username:  str
+        api_key:   str
+        fav_paths: FavPaths | None = None
 
-    @define
-    class Misc(DataclassParser):
-        """ Comics config definitions. """
+    class Misc(BaseModel):
+        """ Miscellaneous config definitions. """
 
         cache_dir: str | None = None
 
-    comics: Comics = field(factory=Comics)
-    e621:   E621 = field(factory=E621)
-    misc:   Misc = field(factory=Misc)
+    comics: Comics | None = None
+    e621:   E621 | None = None
+    misc:   Misc | None = None

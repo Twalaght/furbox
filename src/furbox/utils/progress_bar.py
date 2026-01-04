@@ -8,10 +8,9 @@ import atexit
 from typing import NamedTuple
 
 import rich.progress
+from fluffless.utils.console import console
 from rich.console import Group
 from rich.live import Live
-
-from furbox.utils.console import console
 
 
 class ProgressBar(NamedTuple):

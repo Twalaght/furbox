@@ -14,19 +14,17 @@ Example usage for a post: ::
         ]
 """
 import itertools
-import logging
 from copy import deepcopy
 from datetime import datetime
 from typing import Any, Self
 
-from attrs import define, field
-
-from furbox.models.dataclass import DataclassParser
+from fluffless.models.base_model import BaseModel
+from fluffless.utils import logging
 
 logger = logging.getLogger(__name__)
 
 
-class E621Model(DataclassParser):
+class E621Model(BaseModel):
     """ Standardised parsing behaviour for E621 models. """
 
     @staticmethod
@@ -68,12 +66,10 @@ class E621Model(DataclassParser):
         return f"{base_url}/{md5_hash[:2]}/{md5_hash[2:4]}/{md5_hash}.{extension}"
 
 
-@define
 class Post(E621Model):
     """ Dataclass representation of an e621 post. """
 
-    @define
-    class FileInfo(DataclassParser):
+    class FileInfo(BaseModel):
         """ File information associated with a post. """
 
         width:  int | None = None
@@ -83,8 +79,7 @@ class Post(E621Model):
         md5:    str | None = None
         url:    str | None = None
 
-    @define
-    class Flags(DataclassParser):
+    class Flags(BaseModel):
         """ Post status flags. """
 
         deleted:       bool | None = None
@@ -94,36 +89,33 @@ class Post(E621Model):
         status_locked: bool | None = None
         note_locked:   bool | None = None
 
-    @define
-    class Relationships(DataclassParser):
+    class Relationships(BaseModel):
         """ Post relationship information. """
 
         parent_id:           int | None = None
         has_children:        bool | None = None
         has_active_children: bool | None = None
-        children:            list[int] = field(factory=list)
+        children:            list[int] = []
 
-    @define
-    class Score(DataclassParser):
+    class Score(BaseModel):
         """ Post score values. """
 
         total: int | None = None
         up:    int | None = None
         down:  int | None = None
 
-    @define
-    class Tags(DataclassParser):
+    class Tags(BaseModel):
         """ Post tags by category, and a combined full list. """
 
-        general:    list[str] = field(factory=list)
-        artist:     list[str] = field(factory=list)
-        copyrights: list[str] = field(factory=list)
-        character:  list[str] = field(factory=list)
-        species:    list[str] = field(factory=list)
-        invalid:    list[str] = field(factory=list)
-        meta:       list[str] = field(factory=list)
-        lore:       list[str] = field(factory=list)
-        all_tags:   list[str] = field(factory=list)
+        general:    list[str] = []
+        artist:     list[str] = []
+        copyrights: list[str] = []
+        character:  list[str] = []
+        species:    list[str] = []
+        invalid:    list[str] = []
+        meta:       list[str] = []
+        lore:       list[str] = []
+        all_tags:   list[str] = []
 
     post_id:       int | None = None
     uploader_id:   int | None = None
@@ -137,15 +129,16 @@ class Post(E621Model):
     change_seq:    int | None = None
     duration:      float | None = None
     is_favorited:  bool | None = None
-    sources:       list[str] = field(factory=list)
-    pools:         list[int] = field(factory=list)
-    file_info:     FileInfo = field(factory=FileInfo)
-    flags:         Flags = field(factory=Flags)
-    relationships: Relationships = field(factory=Relationships)
-    score:         Score = field(factory=Score)
-    tags:          Tags = field(factory=Tags)
+    sources:       list[str] = []
+    pools:         list[int] = []
+    file_info:     FileInfo | None = None
+    flags:         Flags | None = None
+    relationships: Relationships | None = None
+    score:         Score | None = None
+    tags:          Tags | None = None
 
-    def from_api(self, api_response: dict[str, Any]) -> Self:
+    @classmethod
+    def from_api(cls, api_response: dict[str, Any]) -> Self:
         """ Create a post from an API response input.
 
         Args:
@@ -166,8 +159,8 @@ class Post(E621Model):
         data["tags"]["all_tags"] = list(set(itertools.chain.from_iterable(data["tags"].values())))
 
         # Convert ISO datetime strings to datetime objects
-        data["created_at"] = self.parse_datetime(data["created_at"])
-        data["updated_at"] = self.parse_datetime(data["updated_at"])
+        data["created_at"] = cls.parse_datetime(data["created_at"])
+        data["updated_at"] = cls.parse_datetime(data["updated_at"])
 
         # Explicitly drop some API data which is not parsed to a post dataclass
         data.pop("preview", None)
@@ -175,7 +168,7 @@ class Post(E621Model):
         data.pop("locked_tags", None)
         data.pop("has_notes", None)
 
-        return self.parse_dict(data)
+        return cls(**data)
 
     def from_database(self, database_entry: dict[str, str]) -> Self:
         """ Create a post from a database CSV row input.
@@ -242,7 +235,6 @@ class Post(E621Model):
         })
 
 
-@define
 class Pool(E621Model):
     """ Dataclass representation of an e621 pool. """
 
@@ -253,10 +245,11 @@ class Pool(E621Model):
     description: str | None = None
     active:      bool | None = None
     category:    str | None = None
-    post_ids:    list[int] = field(factory=list)
+    post_ids:    list[int] = []
     post_count:  int | None = None
 
-    def from_api(self, api_response: dict[str, Any]) -> Self:
+    @classmethod
+    def from_api(cls, api_response: dict[str, Any]) -> Self:
         """ Create a pool from an API response input.
 
         Args:
@@ -273,15 +266,15 @@ class Pool(E621Model):
         data["active"] = data.pop("is_active")
 
         # Perform type conversions where required
-        data["created_at"] = self.parse_datetime(data["created_at"])
-        data["updated_at"] = self.parse_datetime(data["updated_at"])
-        data["active"] = self.char_to_bool(data["active"])
+        data["created_at"] = cls.parse_datetime(data["created_at"])
+        data["updated_at"] = cls.parse_datetime(data["updated_at"])
+        data["active"] = cls.char_to_bool(data["active"])
 
         # Explicitly drop some API data which is not parsed to a post dataclass
         data.pop("creator_id", None)
         data.pop("creator_name", None)
 
-        return self.parse_dict(data)
+        return cls(**data)
 
     def from_database(self, database_entry: dict[str, str]) -> Self:
         """ Create a pool from a database CSV row input.

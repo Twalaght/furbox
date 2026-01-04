@@ -21,11 +21,10 @@ Example usage of e621 comic: ::
         comic_path=config.comics.base_path,
     )
 """
-import logging
-import os
 from pathlib import Path
 
-from attrs import define
+from fluffless.models.base_model import BaseModel
+from fluffless.utils import logging
 
 from furbox.connectors.downloader import download_files, get_numbered_file_names
 from furbox.connectors.e621 import E621Connector, E621DbConnector
@@ -35,22 +34,25 @@ from furbox.utils.progress_bar import progress
 logger = logging.getLogger(__name__)
 
 
-@define
-class E621Comic(Pool):
-    """ Extension of E621 Pool dataclass with local archive information. """
+class E621Comic(BaseModel):
+    """ TODO - Extension of E621 Pool dataclass with local archive information. """
+
+    # Name and pool ID associated with an E621 comic.
+    pool_id:        int
+    name:           str | None = None
 
     # Number of posts which are not expected to be downloaded (Ex. Deliberately excluded pages)
     local_offset:   int = 0
     # Number of posts which have been deleted on server side, and should be skipped over
     server_deleted: int = 0
     # Local directory to download files to, relative to the base comics directory
-    dir_name:       str | os.PathLike | None = None
+    dir_name:       str | None = None
     # Update the local files if True, only check for new items without downloading if False
     update:         bool = True
 
 
-def e621_comics_update(api_connector: E621Connector, pools: list[E621Comic],
-                       comic_path: str | os.PathLike, db_connector: E621DbConnector = None) -> None:
+def e621_comics_update(api_connector: E621Connector, comics: list[E621Comic],
+                       comic_path: Path, db_connector: E621DbConnector | None = None) -> None:
     """ Check for new posts and download new items for E621 pools.
 
     Args:
@@ -63,46 +65,46 @@ def e621_comics_update(api_connector: E621Connector, pools: list[E621Comic],
     """
     # If a database connector was provided, fetch pool info using a database dump
     if db_connector:
-        db_pools = db_connector.get_pools(lambda pool: pool.pool_id in [pool.pool_id for pool in pools])
-        db_pools.sort(key=lambda db_pool: [pool.pool_id for pool in pools].index(db_pool.pool_id))
+        db_pools = db_connector.get_pools(lambda pool: pool.pool_id in [pool.pool_id for pool in comics])
+        db_pools.sort(key=lambda db_pool: [pool.pool_id for pool in comics].index(db_pool.pool_id))
 
         # Enrich each pool with the corresponding database information
-        for pool, db_pool in zip(pools, db_pools, strict=True):
-            pool.parse_dict(db_pool.to_dict())
+        for comic, db_pool in zip(comics, db_pools, strict=True):
+            comic.parse_dict(db_pool.to_dict())
 
     # Start a progress bar, and iterate through each pool
-    pool_progress_id = progress.add_task("Updating e621 pools", total=len(pools))
-    for pool in pools:
+    pool_progress_id = progress.add_task("Updating e621 pools", total=len(comics))
+    for comic in comics:
         # If a database connector was not provided, fetch pool info using the API
         if not db_connector:
-            pool.from_api(api_connector.get_pool(pool.pool_id))
+            pool = Pool.from_api(api_connector.get_pool(comic.pool_id))
 
-        local_pool_dir = Path(comic_path) / (pool.dir_name or pool.name)
+        local_pool_dir = comic_path / (comic.dir_name or comic.name)
         if not local_pool_dir.exists():
             print(f"Folder '{local_pool_dir}' does not exist, creating it")
             local_pool_dir.mkdir(parents=True, exist_ok=True)
 
         # Count the number of local files present, and offset it by the provided local file offset
         local_num_posts = len([f for f in local_pool_dir.iterdir() if f.is_file()])
-        offset_local_num_posts = local_num_posts + pool.local_offset
+        offset_local_num_posts = local_num_posts + comic.local_offset
 
         # Calculate the difference between local posts and server posts
-        page_num_diff = pool.post_count - pool.server_deleted - offset_local_num_posts
+        page_num_diff = pool.post_count - comic.server_deleted - offset_local_num_posts
         if page_num_diff > 0:
-            print(f"{pool.name} has {page_num_diff} new pages")
+            print(f"{comic.name} has {page_num_diff} new pages")
 
-            if not pool.update:
+            if not comic.update:
                 progress.advance(pool_progress_id, 1)
                 continue
 
             # Fetch all posts from the pool through the API
             post_data = api_connector.get_posts(
-                search=f"pool:{pool.pool_id}",
+                search=f"pool:{comic.pool_id}",
                 offset=None,
                 limit=None,
-                desc=pool.name,
+                desc=comic.name,
             )
-            posts = [Post().from_api(post) for post in post_data]
+            posts = [Post.from_api(post) for post in post_data]
 
             # Enforce the order of posts with respect to the pool info data. This will filter
             # out removed posts, and handle posts where pool order does not match upload time
@@ -115,7 +117,7 @@ def e621_comics_update(api_connector: E621Connector, pools: list[E621Comic],
                 url_name_pairs=list(zip(
                     download_urls,
                     get_numbered_file_names(
-                        name=pool.name,
+                        name=comic.name,
                         length=len(download_urls),
                         offset=local_num_posts,
                     ), strict=True,
@@ -126,9 +128,9 @@ def e621_comics_update(api_connector: E621Connector, pools: list[E621Comic],
 
         # Report if the comic is ahead or matching the server count
         elif page_num_diff < 0:
-            print(f"\033[34m{pool.name} is ahead of e6 by {-page_num_diff} pages\033[0m")
+            print(f"\033[34m{comic.name} is ahead of e6 by {-page_num_diff} pages\033[0m")
         else:
-            print(f"\033[32m{pool.name} is up to date\033[0m")
+            print(f"\033[32m{comic.name} is up to date\033[0m")
 
         progress.advance(pool_progress_id, 1)
 

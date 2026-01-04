@@ -35,7 +35,7 @@ class Cache:
         ValueError: Provided cache path was not a directory, or does not exist.
     """
 
-    def __init__(self, cache_dir: str | os.PathLike = None, expiry_hours: int = 24, expiry_minutes: int = 0) -> None:
+    def __init__(self, cache_dir: str | Path | None = None, expiry_hours: int = 24, expiry_minutes: int = 0) -> None:
         if not cache_dir and not (cache_dir := os.getenv("XDG_CACHE_HOME")):
             cache_dir = Path.home() / ".cache"
 
@@ -49,7 +49,7 @@ class Cache:
         if not self.cache_dir.is_dir():
             raise ValueError(f"Cache directory '{cache_dir}' exists but is not a directory")
 
-    def check(self, file_path: str | os.PathLike) -> bool:
+    def check(self, file_path: str | Path) -> bool:
         """ Return True if the file path has a current valid cache entry, False otherwise. """
         if not file_path.exists():
             return False
@@ -58,6 +58,6 @@ class Cache:
         last_modified = datetime.fromtimestamp(file_path.lstat().st_mtime)
         return not (datetime.now() - last_modified) > cache_expiry_time and self.expiry_minutes >= 0
 
-    def resolve_path(self, file_path: str | os.PathLike) -> os.PathLike:
+    def resolve_path(self, file_path: str | Path) -> Path:
         """ Resolve a file path relative to the cache directory. """
         return self.cache_dir / file_path

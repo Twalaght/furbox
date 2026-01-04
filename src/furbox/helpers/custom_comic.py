@@ -1,32 +1,29 @@
 """ Module to provide functionality for comic updates on custom web comics. """
-import logging
 import os
 from pathlib import Path
 
 import requests
-from attrs import define, field
 from bs4 import BeautifulSoup
 from bs4.element import Tag
+from fluffless.models.base_model import BaseModel
+from fluffless.utils import logging
 
 from furbox.connectors.downloader import download_files, get_numbered_file_names
 from furbox.helpers.utils import clean_url, Constants, md5_from_file, md5_from_url
-from furbox.models.dataclass import DataclassParser
 from furbox.utils.progress_bar import progress
 
 logger = logging.getLogger(__name__)
 
 
-@define
-class CustomComic(DataclassParser):
+class CustomComic(BaseModel ):
     """ Dataclass representation of a custom web comic. """
 
-    @define
-    class Instruction(DataclassParser):
+    class Instruction(BaseModel):
         """ Single instruction to apply on a BeautifulSoup to extract data. """
 
         html_type: str | None = None
         text:      str | None = None
-        attrs:     dict[str, str] = field(factory=dict)
+        attrs:     dict[str, str] = {}
         index:     int | None = 0
 
     name: str | None = None
@@ -39,9 +36,9 @@ class CustomComic(DataclassParser):
 
     # List of instructions to extract a link to the latest page,
     # images on a page, and the previous page respectively
-    latest:   list[Instruction] = field(factory=list)
-    images:   list[Instruction] = field(factory=list)
-    backlink: list[Instruction] = field(factory=list)
+    latest:   list[Instruction] = []
+    images:   list[Instruction] = []
+    backlink: list[Instruction] = []
 
 
 def custom_comic_update(custom_comic: CustomComic, comic_path: str | os.PathLike) -> None:
