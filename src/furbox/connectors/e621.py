@@ -15,7 +15,7 @@ from furbox.connectors.cache import Cache
 from furbox.connectors.downloader import download_file
 from furbox.helpers.utils import Constants
 from furbox.models.e621 import Pool
-from furbox.utils.progress_bar import progress
+from furbox.utils.progress_bar import ProgressBar
 
 logger = logging.getLogger(__name__)
 
@@ -93,10 +93,7 @@ class E621Connector:
             if limit:
                 limit += offset
 
-        posts_progress_bar = progress.add_task(
-            description=f"Fetching posts - {desc or search}",
-        )
-
+        progress = ProgressBar(f"Fetching posts - {desc or search}", persist=self.leave_progress_bars)
         posts = []
         while True:
             # Setting page to "b{post_id}" will show posts before the given ID. This is done for accurate
@@ -110,7 +107,7 @@ class E621Connector:
 
             response_posts = response.json()["posts"]
             posts.extend(response_posts)
-            progress.advance(posts_progress_bar, len(response_posts))
+            progress.advance(len(response_posts))
 
             # Break if a partial response is received, as it must be the final page
             if len(response_posts) < self.PAGE_LIMIT:
@@ -122,7 +119,7 @@ class E621Connector:
 
             sleep(self.API_DELAY)
 
-        progress.finish(posts_progress_bar)
+        progress.close()
         return posts[offset:limit]
 
     def get_pool(self, pool_id: int | str) -> dict[str, Any]:

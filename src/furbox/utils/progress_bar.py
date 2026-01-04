@@ -127,12 +127,12 @@ class ProgressBar:
             Only refresh the progress bar each time the progress increases by at least this many units.
             Defaults to None, which will allow updates of smallest increment of size 1.
         style (ProgressBarStyle, optional): Display style to use. Defaults to "generic".
-        persist (bool, optional): Leave the progress bar on screen after completion if True. Defaults to False.
+        persist (bool, optional): Leave the progress bar on screen after completion if True. Defaults to True.
     """
 
     def __init__(
         self, description: str = "", length: int | None = None, chunk_size: int | None = None,
-        style: ProgressBarStyle = ProgressBarStyle.GENERIC, persist: bool = False,
+        style: ProgressBarStyle = ProgressBarStyle.GENERIC, persist: bool = True,
     ) -> None:
         self.progress = self._create_progress_bar(style)
         self.task_id = self.progress.add_task(description=description, total=length)
