@@ -3,7 +3,6 @@ import os
 from pathlib import Path
 
 import requests
-
 from bs4 import BeautifulSoup
 from bs4.element import Tag
 from fluffless.models.base_model import BaseModel

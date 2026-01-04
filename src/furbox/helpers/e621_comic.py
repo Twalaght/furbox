@@ -26,6 +26,7 @@ from pathlib import Path
 from fluffless.models.base_model import BaseModel
 from fluffless.utils import logging
 
+from furbox.connectors.downloader import download_files, get_numbered_file_names
 from furbox.connectors.e621 import E621Connector, E621DbConnector
 from furbox.models.e621 import Pool, Post
 from furbox.utils.progress_bar import progress
@@ -88,8 +89,6 @@ def e621_comics_update(api_connector: E621Connector, comics: list[E621Comic],
         offset_local_num_posts = local_num_posts + comic.local_offset
 
         # Calculate the difference between local posts and server posts
-        # logger.error(comic.model_dump())
-        # exit()
         page_num_diff = pool.post_count - comic.server_deleted - offset_local_num_posts
         if page_num_diff > 0:
             print(f"{comic.name} has {page_num_diff} new pages")
@@ -114,19 +113,18 @@ def e621_comics_update(api_connector: E621Connector, comics: list[E621Comic],
             # Remove the URLs which correspond to files already downloaded
             download_urls = [post.file_info.url for post in posts][offset_local_num_posts:]
 
-            logger.print(download_urls)
-            # download_files(
-            #     url_name_pairs=list(zip(
-            #         download_urls,
-            #         get_numbered_file_names(
-            #             name=pool.name,
-            #             length=len(download_urls),
-            #             offset=local_num_posts,
-            #         ), strict=True,
-            #     )),
-            #     download_dir=local_pool_dir,
-            #     description=f"Downloading {pool.name}",
-            # )
+            download_files(
+                url_name_pairs=list(zip(
+                    download_urls,
+                    get_numbered_file_names(
+                        name=comic.name,
+                        length=len(download_urls),
+                        offset=local_num_posts,
+                    ), strict=True,
+                )),
+                download_dir=local_pool_dir,
+                description=f"Downloading {pool.name}",
+            )
 
         # Report if the comic is ahead or matching the server count
         elif page_num_diff < 0:
