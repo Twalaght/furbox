@@ -10,7 +10,7 @@ from fluffless.utils import logging
 
 from furbox.connectors.downloader import download_files, get_numbered_file_names
 from furbox.helpers.utils import clean_url, Constants, md5_from_file, md5_from_url
-from furbox.utils.progress_bar import progress
+from furbox.utils.progress_bar import ProgressBar
 
 logger = logging.getLogger(__name__)
 
@@ -104,9 +104,7 @@ def custom_comic_update(custom_comic: CustomComic, comic_path: str | os.PathLike
             logger.exception(f"File '{last_file}' must follow the format 'series_name page_number.ext'")
 
     images = []
-    search_progress_id = progress.add_task(
-        description=f"Searching pages - {custom_comic.name}",
-    )
+    progress = ProgressBar(f"Searching pages - {custom_comic.name}")
     while True:
         response = session.get(page)
         response.raise_for_status()
@@ -128,7 +126,7 @@ def custom_comic_update(custom_comic: CustomComic, comic_path: str | os.PathLike
         except Exception:
             break
 
-    progress.finish(search_progress_id)
+    progress.close()
 
     if not images:
         print(f"\033[32m{custom_comic.name} is up to date\033[0m")

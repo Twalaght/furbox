@@ -29,7 +29,7 @@ from fluffless.utils import logging
 from furbox.connectors.downloader import download_files, get_numbered_file_names
 from furbox.connectors.e621 import E621Connector, E621DbConnector
 from furbox.models.e621 import Pool, Post
-from furbox.utils.progress_bar import progress
+from furbox.utils.progress_bar import ProgressBar
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ def e621_comics_update(api_connector: E621Connector, comics: list[E621Comic],
             comic.parse_dict(db_pool.to_dict())
 
     # Start a progress bar, and iterate through each pool
-    pool_progress_id = progress.add_task("Updating e621 pools", total=len(comics))
+    progress = ProgressBar("Updating e621 pools", length=len(comics))
     for comic in comics:
         # If a database connector was not provided, fetch pool info using the API
         if not db_connector:
@@ -94,7 +94,7 @@ def e621_comics_update(api_connector: E621Connector, comics: list[E621Comic],
             print(f"{comic.name} has {page_num_diff} new pages")
 
             if not comic.update:
-                progress.advance(pool_progress_id, 1)
+                progress.advance()
                 continue
 
             # Fetch all posts from the pool through the API
@@ -132,6 +132,6 @@ def e621_comics_update(api_connector: E621Connector, comics: list[E621Comic],
         else:
             print(f"\033[32m{comic.name} is up to date\033[0m")
 
-        progress.advance(pool_progress_id, 1)
+        progress.advance()
 
-    progress.finish(pool_progress_id, persist=True)
+    progress.close()

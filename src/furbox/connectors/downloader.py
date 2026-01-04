@@ -8,7 +8,7 @@ from urllib.request import URLopener
 import requests
 
 from furbox.helpers.utils import clean_url
-from furbox.utils.progress_bar import progress
+from furbox.utils.progress_bar import ProgressBar, ProgressBarStyle
 
 logger = logging.getLogger(__name__)
 
@@ -32,12 +32,12 @@ def get_numbered_file_names(name: str, length: int, offset: int = 0, zero_pad: i
     return [f"{name} {str(num).zfill(zero_len)}" for num in range(offset + 1, offset + length + 1)]
 
 
-def download_file(url: str, file_path: str | os.PathLike, description: str, leave_progress_bar: bool) -> None:
+def download_file(url: str, file_path: str | Path, description: str, leave_progress_bar: bool) -> None:
     """ Download a file from a URL with a progress bar.
 
     Args:
         url (str): URL to download the file from.
-        file_path (str | os.PathLike): File path to save the downloaded file to.
+        file_path (str | Path): File path to save the downloaded file to.
         description (str): Description to use in progress bar.
         leave_progress_bar (bool): Leave the progress bar display after the download has finished.
     """
@@ -45,18 +45,18 @@ def download_file(url: str, file_path: str | os.PathLike, description: str, leav
     response = requests.get(url, stream=True)
     response.raise_for_status()
 
-    with open(file_path, "wb") as f:
-        download_progress_id = progress.add_task(
+    with (
+        Path(file_path).open("wb") as f,
+        ProgressBar(
             description=description,
-            total=int(response.headers.get("content-length", 0)),
-            is_file=True,
-        )
-
+            length=int(response.headers.get("content-length", 0)),
+            style=ProgressBarStyle.FILE,
+            persist=leave_progress_bar,
+        ) as progress,
+    ):
         for chunk in response.iter_content(chunk_size=(1024 * 128)):
-            progress.advance(download_progress_id, len(chunk))
+            progress.advance(len(chunk))
             f.write(chunk)
-
-        progress.finish(download_progress_id, persist=leave_progress_bar)
 
 
 def parallel_download(args: tuple[str, str | os.PathLike]) -> None:
@@ -92,8 +92,8 @@ def download_files(url_name_pairs: list[tuple[str, str]], download_dir: str | os
         cleaned_url = clean_url(url)
         download_args.append((cleaned_url, Path(download_dir) / f"{name}.{cleaned_url.split('.')[-1]}"))
 
-    download_progress_id = progress.add_task(description, total=len(url_name_pairs))
+    progress = ProgressBar(description, length=len(url_name_pairs))
     for _ in Pool(cpu_count()).imap(parallel_download, download_args, chunksize=1):
-        progress.advance(download_progress_id, 1)
+        progress.advance()
 
-    progress.finish(download_progress_id)
+    progress.close()
