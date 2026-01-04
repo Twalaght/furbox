@@ -5,6 +5,7 @@ import logging
 import os
 from base64 import b64encode
 from enum import Enum
+from pathlib import Path
 from time import sleep
 from typing import Any, Callable
 
@@ -165,7 +166,7 @@ class E621DbConnector:
         post = "posts"
         pool = "pools"
 
-    def __init__(self, cache_dir: str | os.PathLike = None) -> None:
+    def __init__(self, cache_dir: str | Path | None = None) -> None:
         self.session = requests.session()
         self.cache = Cache(cache_dir)
 

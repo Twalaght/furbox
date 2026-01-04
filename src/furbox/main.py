@@ -1,62 +1,58 @@
-""" Main entrypoint to perform setup and transfer control to a runner's entry function. """
-
-import logging
+""" Runner entrypoint for Furbox. """
 import os
 from pathlib import Path
 
-import yaml
+from fluffless.utils import cli, logging
 
 from furbox import runners
 from furbox.models.config import Config
-from furbox.runners import cli
-
-cli.import_package_modules(runners)
 
 logger = logging.getLogger(__name__)
 
 
-def get_config_path() -> os.PathLike:
+def get_config_path() -> Path:
     """ Search for a config path in multiple locations, following a preset order.
 
-    Config will be sourced from `furbox_config.yaml` in the first valid location from:
+    Config will be sourced from `config.yaml` in the first valid location from:
         - local package directory (for a development environment install)
         - $XDG_CONFIG_HOME/furbox
         - $HOME/.config/furbox
 
     Raises:
-        NotImplementedError: TODO. Default case where config does not exist is not handled.
+        FileNotFoundError: Default case where config does not exist is not handled.
 
     Returns:
-        os.PathLike: Path of config file.
+        Path: Path of config file.
     """
-    if "site-packages" not in __file__:
-        project_root = Path(__file__).parents[1]
-        config_path = project_root / "furbox_config.yaml"
-        if config_path.exists():
-            return config_path
+    config_file_name = "config.yaml"
 
-    if config_root := os.getenv("XDG_CONFIG_HOME"):
-        config_path = config_root / "furbox" / "furbox_config.yaml"
-        if config_path.exists():
-            return config_path
-
-    config_root = Path.home() / ".config" / "furbox" / "furbox_config.yaml"
-    if config_path.exists():
+    if (
+        "site-packages" not in __file__ and
+        (config_path := Path(__file__).parents[2] / config_file_name).exists()
+    ):
         return config_path
 
-    # TODO - Handle case where no config exists
-    raise NotImplementedError
+    config_root = os.getenv("XDG_CONFIG_HOME", Path.home() / ".config")
+    if (config_path := config_root / "furbox" / config_file_name).exists():
+        return config_path
+
+    # TODO - Handle case where no config exists.
+    raise FileNotFoundError("No valid config file found")
 
 
 def main() -> None:
-    """ TODO. """
+    """ Entrypoint runner. """
+    cli.import_package_modules(runners)
     args = cli.parse_args()
 
-    with open(get_config_path()) as f:
-        data = yaml.safe_load(f)
+    logging.setup_logger(
+        verbosity=args.verbose,
+        modules=["furbox"],
+    )
 
-    config = Config().parse_dict(data)
-
+    # TODO
+    # Load config from the provided config file.
+    config = Config.load_from_yaml(get_config_path())
     cli.run(args, config)
 
 
