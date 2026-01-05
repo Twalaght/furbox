@@ -1,12 +1,9 @@
-""" TODO - Module to handle access and parsing of all application configuration.
+""" Model for all application config.
 
 Example usage of Config: ::
 
-    config = Config().parse_dict(input_dict)
-    for config_file in config_files:
-        with open(config_file) as f:
-            data = yaml.safe_load(f)
-            config.parse_dict(data)
+    config = Config.load_from_yaml("path/to/config.yaml")
+    api_key = config.e621.api_key
 """
 from pathlib import Path
 
