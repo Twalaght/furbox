@@ -2,6 +2,7 @@
 import argparse
 import logging
 import sys
+from enum import auto, StrEnum
 
 import yaml
 from fluffless.utils import cli
@@ -13,35 +14,47 @@ from furbox.models.config import Config
 logger = logging.getLogger(__name__)
 
 
-PARSER = cli.add_parser(name="comics_update", help="Update local comic files.")
-# TODO - Make strict, currently unused.
-PARSER.add_argument("comic_type", nargs="*", default=["all"], help="Types of comic to update.")
-PARSER.add_argument("--use-db", action="store_true", help="Fetch e621 pool data from a database dump.")
+class ComicTypes(StrEnum):
+    """ String enum of all supported comic types for the synchronisation runner. """
 
-logger = logging.getLogger(__name__)
+    E621 = auto()
+
+    def all_types() -> str:
+        """ Convert string enum to a list of strings, for all valid keys. """
+        return [str(comic) for comic in ComicTypes]
+
+
+PARSER = cli.add_parser(name="comics_update", help="Update local comic files.")
+PARSER.add_argument("comic_type", nargs="*", type=ComicTypes, choices=ComicTypes.all_types(),
+                    help=(f"Types of comic to update. All types will be downloaded if not specified. "
+                          f"Allowed comic types are '{'\', \''.join(ComicTypes.all_types())}'."))
+PARSER.add_argument("--use-db", action="store_true", help="Fetch e621 pool data from a database dump.")
 
 
 @cli.entrypoint(parser=PARSER)
 def comics_update(args: argparse.Namespace, config: Config) -> None:
     """ Update comics on disk based on config definitions. """
-    if not config.comics:
+    if config.comics is None:
         logger.error("Config requires `comics` to be defined to use comic update utility")
         sys.exit(1)
 
+    # If no argument was provided for comic types, enable all of them.
+    enabled_categories = args.comic_type or ComicTypes.all_types()
+
     comic_base_path = config.comics.base_path
-    comic_yaml_path = comic_base_path / config.comics.database_file
+    comic_db_yaml_path = comic_base_path / config.comics.database_file
 
-    # TODO - This is a bad system.
-    args.comic_type = [comic_type.lower() for comic_type in args.comic_type]
+    if not comic_db_yaml_path.exists() or not comic_db_yaml_path.is_file():
+        raise FileNotFoundError(f"File '{comic_db_yaml_path}' does not exist or is not a file")
 
-    if not comic_yaml_path.exists() or not comic_yaml_path.is_file():
-        raise FileNotFoundError(f"File '{comic_yaml_path}' does not exist or is not a file")
-
-    with comic_yaml_path.open() as f:
+    with comic_db_yaml_path.open() as f:
         comic_data = yaml.safe_load(f)
 
-    if (e621_data := comic_data.get("e621")):
-        # Sort parsed data by pool name, and update comics in this order
+    if (
+        ComicTypes.E621 in enabled_categories and
+        (e621_data := comic_data.get("e621"))
+    ):
+        # Sort parsed data by pool name, and update comics in this order.
         pools = sorted(
             [E621Comic(**data) for data in e621_data],
             key=lambda pool: pool.name or "",
@@ -52,11 +65,9 @@ def comics_update(args: argparse.Namespace, config: Config) -> None:
             api_key=config.e621.api_key,
         )
 
-        e621_db_connector = E621DbConnector(config.misc.cache_dir or None)
-
         e621_comics_update(
             api_connector=e621_connector,
             comics=pools,
             comic_path=config.comics.base_path,
-            db_connector=e621_db_connector if args.use_db else None,
+            db_connector=E621DbConnector(config.misc.cache_dir or None) if args.use_db else None,
         )
