@@ -78,6 +78,7 @@ select = ["ALL"]
 
 ignore = [
     # Disable whole sets of rules
+    "DTZ", # flake8-datetimez
     "EM",  # flake8-errmsg
     "FBT", # flake8-boolean-trap
     "G",   # flake8-logging-format
