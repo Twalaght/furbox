@@ -43,4 +43,4 @@ class Config(BaseModel):
 
     comics: Comics | None = None
     e621:   E621 | None = None
-    misc:   Misc | None = None
+    misc:   Misc = Misc()
