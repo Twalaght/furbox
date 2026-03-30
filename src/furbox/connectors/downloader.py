@@ -1,9 +1,8 @@
 """ Module to download files and helper functions related to download operations. """
 import logging
-import os
+import shutil
 from multiprocessing import cpu_count, Pool
 from pathlib import Path
-from urllib.request import URLopener
 
 import requests
 
@@ -42,11 +41,12 @@ def download_file(url: str, file_path: str | Path, description: str, leave_progr
         leave_progress_bar (bool): Leave the progress bar display after the download has finished.
     """
     # Download the file as a stream, such that progress can be accurately displayed
-    response = requests.get(url, stream=True)
+    response = requests.get(url, stream=True, timeout=5)
     response.raise_for_status()
 
+    tmp_file_path = file_path.resolve().parent / f"_{file_path.name}"
     with (
-        Path(file_path).open("wb") as f,
+        Path(tmp_file_path).open("wb") as f,
         ProgressBar(
             description=description,
             length=int(response.headers.get("content-length", 0)),
@@ -58,32 +58,47 @@ def download_file(url: str, file_path: str | Path, description: str, leave_progr
             progress.advance(len(chunk))
             f.write(chunk)
 
+    shutil.move(
+        src=tmp_file_path,
+        dst=file_path,
+    )
 
-def parallel_download(args: tuple[str, str | os.PathLike]) -> None:
+
+def parallel_download(args: tuple[str, Path]) -> None:
     """ Download multiple files in parallel.
 
     Args:
-        args (tuple[str, str  |  os.PathLike]): Positional arguments to pass to `download()`.
+        args (tuple[str, Path]): Positional arguments to pass to `download()`.
     """
-    def download(url: str, file_path: str | os.PathLike) -> None:
+    def download(url: str, file_path: Path) -> None:
         """ Download a single file to disk.
 
         Args:
             url (str): URL to download the file from.
-            file_path (str | os.PathLike): File path to save the downloaded file to.
+            file_path (Path): File path to save the downloaded file to.
         """
-        URLopener().retrieve(url, file_path)
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+
+        tmp_file_path = file_path.resolve().parent / f"_{file_path.name}"
+        with Path(tmp_file_path).open("wb") as f:
+            f.write(response.content)
+
+        shutil.move(
+            src=tmp_file_path,
+            dst=file_path,
+        )
 
     download(*args)
 
 
-def download_files(url_name_pairs: list[tuple[str, str]], download_dir: str | os.PathLike, description: str) -> None:
+def download_files(url_name_pairs: list[tuple[str, str]], download_dir: Path, description: str) -> None:
     """ Download multiple files from a list of URL name pairs.
 
     Args:
         url_name_pairs (list[tuple[str, str]]): List of tuples containing the URL to download from, \
                                                 and the file name to write to.
-        download_dir (str | os.PathLike): Directory to download all files to.
+        download_dir (Path): Directory to download all files to.
         description (str): Description to use in progress bar.
     """
     # Strip HTTP query string params from the URL and format file names to include extension
