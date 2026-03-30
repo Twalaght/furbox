@@ -2,6 +2,9 @@
 /*.yaml
 !.*.yaml
 
+# Temporary files created by furbox
+tmp
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
