@@ -2,7 +2,6 @@
 import csv
 import gzip
 import logging
-import os
 from base64 import b64encode
 from enum import Enum
 from pathlib import Path
@@ -10,6 +9,7 @@ from time import sleep
 from typing import Any, Callable
 
 import requests
+from fluffless.models.base_model import BaseModel
 
 from furbox.connectors.cache import Cache
 from furbox.connectors.downloader import download_file
@@ -147,7 +147,7 @@ class E621DbConnector:
     Note that database dumps must be fetched from e621, as e926 does not provide equivalent data.
 
     Args:
-        cache_dir (str | os.PathLike, optional): \
+        cache_dir (str | Path | None, optional): \
             Cache directory to use when reading and writing database dumps. \
             Defaults to None, where a default cache location will be used.
     """
@@ -167,7 +167,7 @@ class E621DbConnector:
         self.session = requests.session()
         self.cache = Cache(cache_dir)
 
-    def _get_database(self, database_name: str) -> os.PathLike:
+    def _get_database(self, database_name: str) -> Path:
         """ Download a database dump if no valid cached file exists.
 
         Args:
@@ -175,7 +175,7 @@ class E621DbConnector:
                                  Valid options defined in `E621DbConnector.DatabaseType`.
 
         Returns:
-            os.PathLike: Path to the database file on disk.
+            Path: Path to the database file on disk.
         """
         file_path = self.cache.resolve_path(f"{database_name}.gz")
         if not self.cache.check(file_path):
@@ -195,13 +195,13 @@ class E621DbConnector:
 
         return file_path
 
-    def _parse_database(self, file_path: os.PathLike, data_model: type,
+    def _parse_database(self, file_path: Path, data_model: type[BaseModel],
                         filter_condition: Callable[[type], bool] = None) -> list[type]:
         """ Parse a database file into dataclass objects, optionally subject to a filter condition.
 
         Args:
-            file_path (os.PathLike): Path to the database file on disk.
-            data_model (type): Dataclass type to parse database rows into.
+            file_path (Path): Path to the database file on disk.
+            data_model (type[BaseModel]): Dataclass type to parse database rows into.
             filter_condition (Callable[[type], bool], optional): \
                 Filter function to apply on dataclasses to determine if they will be returned. \
                 Defaults to None, where all dataclass objects will be returned.
@@ -216,7 +216,7 @@ class E621DbConnector:
             csv.field_size_limit(int(pow(2, 20)))
 
             for row in csv.DictReader(f):
-                entry = data_model().from_database(row)
+                entry = data_model.from_database(row)
                 if not filter_condition or filter_condition(entry):
                     database_entries.append(entry)
 
