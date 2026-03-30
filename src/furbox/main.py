@@ -1,5 +1,6 @@
 """ Runner entrypoint for Furbox. """
 import os
+import sys
 from pathlib import Path
 
 from fluffless.utils import cli, logging
@@ -32,7 +33,7 @@ def get_config_path() -> Path:
     ):
         return config_path
 
-    config_root = os.getenv("XDG_CONFIG_HOME", Path.home() / ".config")
+    config_root = Path(os.getenv("XDG_CONFIG_HOME", Path.home() / ".config"))
     if (config_path := config_root / "furbox" / config_file_name).exists():
         return config_path
 
@@ -50,10 +51,12 @@ def main() -> None:
         modules=["furbox"],
     )
 
-    # TODO
     # Load config from the provided config file.
     config = Config.load_from_yaml(get_config_path())
-    cli.run(args, config)
+
+    exit_code = cli.run(args, config)
+    if exit_code is not None:
+        sys.exit(exit_code)
 
 
 if __name__ == "__main__":
