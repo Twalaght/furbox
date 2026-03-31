@@ -9,7 +9,6 @@ from time import sleep
 from typing import Any, Callable
 
 import requests
-from fluffless.models.base_model import BaseModel
 
 from furbox.connectors.cache import Cache
 from furbox.connectors.downloader import download_file
@@ -62,7 +61,7 @@ class E621Connector:
         self.base_url = backend_url.value
 
     def get_posts(self, search: str, offset: int | None = None,
-                  limit: int | None = None, desc: str = None) -> list[dict[str, Any]]:
+                  limit: int | None = None, desc: str | None = None) -> list[dict[str, Any]]:
         """ Get e621 posts matching a search query.
 
         Args:
@@ -71,8 +70,8 @@ class E621Connector:
                                            Defaults to None, where no posts will be skipped.
             limit (int | None, optional): Maximum number of posts to return. \
                                           Defaults to None, where all posts will be returned.
-            desc (str, optional): Description to use in progress bar. Defaults to None, \
-                                  where the search query string will be used.
+            desc (str | None, optional): Description to use in progress bar. Defaults to None, \
+                                         where the search query string will be used.
 
         Returns:
             list[dict[str, Any]]: Post JSON data matching the search query.
@@ -195,19 +194,19 @@ class E621DbConnector:
 
         return file_path
 
-    def _parse_database(self, file_path: Path, data_model: type[BaseModel],
-                        filter_condition: Callable[[type], bool] = None) -> list[type]:
+    def _parse_database(self, file_path: Path, data_model: type[Pool],
+                        filter_condition: Callable[[Pool], bool] | None = None) -> list[Pool]:
         """ Parse a database file into dataclass objects, optionally subject to a filter condition.
 
         Args:
             file_path (Path): Path to the database file on disk.
-            data_model (type[BaseModel]): Dataclass type to parse database rows into.
-            filter_condition (Callable[[type], bool], optional): \
+            data_model (type[Pool]): Dataclass type to parse database rows into.
+            filter_condition (Callable[[Pool], bool] | None, optional): \
                 Filter function to apply on dataclasses to determine if they will be returned. \
                 Defaults to None, where all dataclass objects will be returned.
 
         Returns:
-            list[type]: List of dataclass objects parsed from the database.
+            list[Pool]: List of dataclass objects parsed from the database.
         """
         database_entries = []
         with gzip.open(file_path, "rt") as f:
@@ -222,11 +221,11 @@ class E621DbConnector:
 
         return database_entries
 
-    def get_pools(self, filter_condition: Callable[[Pool], bool] = None) -> list[Pool]:
+    def get_pools(self, filter_condition: Callable[[Pool], bool] | None = None) -> list[Pool]:
         """ Get pool dataclass objects from a database dump.
 
         Args:
-            filter_condition (Callable[[Pool], bool], optional): \
+            filter_condition (Callable[[Pool], bool] | None, optional): \
                 Filter function to apply on pool dataclasses to determine if it will be returned. \
                 Defaults to None, where all pools will be returned.
 

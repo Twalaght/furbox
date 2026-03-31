@@ -1,14 +1,12 @@
 """ Runner to update and synchronise collections of comics. """
 import argparse
 import logging
-import sys
 from enum import auto, StrEnum
 
-import yaml
 from fluffless.utils import cli
 
-from furbox.connectors.e621 import E621Connector, E621DbConnector
-from furbox.helpers.e621_comic import e621_comics_update, E621Comic
+from furbox.helpers.comic.e621 import update_e621_comics
+from furbox.models.comic import Comics
 from furbox.models.config import Config
 
 logger = logging.getLogger(__name__)
@@ -19,9 +17,10 @@ class ComicTypes(StrEnum):
 
     E621 = auto()
 
-    def all_types() -> str:
+    @classmethod
+    def all_types(cls) -> list[str]:
         """ Convert string enum to a list of strings, for all valid keys. """
-        return [str(comic) for comic in ComicTypes]
+        return [str(comic.value) for comic in cls]
 
 
 PARSER = cli.add_parser(name="comics_update", help="Update local comic files.")
@@ -32,11 +31,11 @@ PARSER.add_argument("--use-db", action="store_true", help="Fetch e621 pool data 
 
 
 @cli.entrypoint(parser=PARSER)
-def comics_update(args: argparse.Namespace, config: Config) -> None:
+def comics_update(args: argparse.Namespace, config: Config) -> int | None:
     """ Update comics on disk based on config definitions. """
     if config.comics is None:
         logger.error("Config requires `comics` to be defined to use comic update utility")
-        sys.exit(1)
+        return 1
 
     # If no argument was provided for comic types, enable all of them.
     enabled_categories = args.comic_type or ComicTypes.all_types()
@@ -47,27 +46,13 @@ def comics_update(args: argparse.Namespace, config: Config) -> None:
     if not comic_db_yaml_path.exists() or not comic_db_yaml_path.is_file():
         raise FileNotFoundError(f"File '{comic_db_yaml_path}' does not exist or is not a file")
 
-    with comic_db_yaml_path.open() as f:
-        comic_data = yaml.safe_load(f)
+    comics = Comics.load_from_yaml(comic_db_yaml_path)
 
-    if (
-        ComicTypes.E621 in enabled_categories and
-        (e621_data := comic_data.get("e621"))
-    ):
-        # Sort parsed data by pool name, and update comics in this order.
-        pools = sorted(
-            [E621Comic(**data) for data in e621_data],
-            key=lambda pool: pool.name or "",
+    if comics.e621 and ComicTypes.E621 in enabled_categories:
+        update_e621_comics(
+            config=config,
+            e621_comics=comics.e621,
+            use_db=args.use_db,
         )
 
-        e621_connector = E621Connector(
-            username=config.e621.username,
-            api_key=config.e621.api_key,
-        )
-
-        e621_comics_update(
-            api_connector=e621_connector,
-            comics=pools,
-            comic_path=config.comics.base_path,
-            db_connector=E621DbConnector(config.misc.cache_dir or None) if args.use_db else None,
-        )
+    return None

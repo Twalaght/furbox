@@ -12,15 +12,15 @@ from furbox.utils.progress_bar import ProgressBar, ProgressBarStyle
 logger = logging.getLogger(__name__)
 
 
-def get_numbered_file_names(name: str, length: int, offset: int = 0, zero_pad: int = None) -> list[str]:
+def get_numbered_file_names(name: str, length: int, offset: int = 0, zero_pad: int | None = None) -> list[str]:
     """ Generate files names numbered incrementally.
 
     Args:
         name (str): Base name for all files.
         length (int): Number of file names to generate.
         offset (int, optional): Offset to all file numbers. Defaults to 0.
-        zero_pad (int, optional): Use a fixed length zero padding for file names if provided. \
-                                  Defaults to None.
+        zero_pad (int | None, optional): Use a fixed length zero padding for file names if provided. \
+                                         Defaults to None.
 
     Returns:
         list[str]: List of generated file names.
@@ -31,12 +31,12 @@ def get_numbered_file_names(name: str, length: int, offset: int = 0, zero_pad: i
     return [f"{name} {str(num).zfill(zero_len)}" for num in range(offset + 1, offset + length + 1)]
 
 
-def download_file(url: str, file_path: str | Path, description: str, leave_progress_bar: bool) -> None:
+def download_file(url: str, file_path: Path, description: str, leave_progress_bar: bool) -> None:
     """ Download a file from a URL with a progress bar.
 
     Args:
         url (str): URL to download the file from.
-        file_path (str | Path): File path to save the downloaded file to.
+        file_path (Path): File path to save the downloaded file to.
         description (str): Description to use in progress bar.
         leave_progress_bar (bool): Leave the progress bar display after the download has finished.
     """

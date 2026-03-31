@@ -1,4 +1,8 @@
-""" Module to provide functionality for comic updates on custom web comics. """
+# type: ignore noqa: PGH003
+""" Module to provide functionality for comic updates on custom web comics.
+
+TODO - Not currently used in any capacity.
+"""
 import os
 from pathlib import Path
 
@@ -15,7 +19,7 @@ from furbox.utils.progress_bar import ProgressBar
 logger = logging.getLogger(__name__)
 
 
-class CustomComic(BaseModel ):
+class CustomComic(BaseModel):
     """ Dataclass representation of a custom web comic. """
 
     class Instruction(BaseModel):
@@ -41,12 +45,12 @@ class CustomComic(BaseModel ):
     backlink: list[Instruction] = []
 
 
-def custom_comic_update(custom_comic: CustomComic, comic_path: str | os.PathLike) -> None:
+def custom_comic_update(custom_comic: CustomComic, comic_path: Path) -> None:
     """ Check for new pages and download new items for a web comic.
 
     Args:
         custom_comic (CustomComic): Dataclass with local archive information and parsing instructions.
-        comic_path (str | os.PathLike): Base directory for comic archives.
+        comic_path (Path): Base directory for comic archives.
     """
     def extract_from_soup(soup: BeautifulSoup, instructions: list[CustomComic.Instruction]) -> Tag | list[Tag]:
         """ Extract a single tag, or a set of tags from a BeautifulSoup object.
@@ -87,7 +91,7 @@ def custom_comic_update(custom_comic: CustomComic, comic_path: str | os.PathLike
 
     local_comic_dir = Path(comic_path) / (custom_comic.dir_name or custom_comic.name)
     if not local_comic_dir.exists():
-        print(f"Folder '{local_comic_dir}' does not exist, creating it")
+        logger.print(f"Folder '{local_comic_dir}' does not exist, creating it")
         local_comic_dir.mkdir(parents=True, exist_ok=True)
 
     # Find the alphabetical last file in the directory if it exists
@@ -123,16 +127,16 @@ def custom_comic_update(custom_comic: CustomComic, comic_path: str | os.PathLike
         # Find the backlink to the previous page if it exists
         try:
             page = extract_from_soup(soup, custom_comic.backlink)["href"]
-        except Exception:
+        except Exception:  # noqa: BLE001
             break
 
     progress.close()
 
     if not images:
-        print(f"\033[32m{custom_comic.name} is up to date\033[0m")
+        logger.print(f"[green]{custom_comic.name} is up to date[/]")
         return
 
-    print(f"{custom_comic.name} has {len(images)} new pages")
+    logger.print(f"{custom_comic.name} has {len(images)} new pages")
     download_files(
         url_name_pairs=list(zip(
             images,
