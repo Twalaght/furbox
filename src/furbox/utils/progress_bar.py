@@ -76,7 +76,9 @@ class ProgressManager:
         self.live.update(Group(*renderables))
 
         # If not already running, start the live display.
-        if not self.live.is_started:
+        if not renderables:
+            self.live.stop()
+        elif not self.live.is_started:
             self.live.start()
 
     def remove_bar(self, task_id: int, persist: bool) -> None:
