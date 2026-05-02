@@ -10,6 +10,9 @@ from fluffless.utils import logging
 
 logger = logging.getLogger(__name__)
 
+# Artist tags which are used only for metadata, and should not be considered as actual artists.
+META_ARTISTS = ("conditional_dnp", "sound_warning")
+
 
 def source_url_from_hash(md5_hash: str, extension: str) -> str:
     """ Get a post source url from an MD5 hash.
