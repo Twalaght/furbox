@@ -162,13 +162,11 @@ def parallel_download(args: tuple[str, Path]) -> None:
     download(*args)
 
 
-# TODO
 def download_files(file_targets: list[UrlFileTarget], description: str) -> None:
-    """ Download multiple files from a list of URL name pairs.
+    """ Download a list of file targets.
 
     Args:
         file_targets (list[UrlFileTarget]): List of download targets, pairing download URLs with file names.
-        download_dir (Path): Directory to download all files to.
         description (str): Description to use in progress bar.
     """
     download_args = [(target.url, target.download_directory) for target in file_targets]
