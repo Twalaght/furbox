@@ -26,7 +26,9 @@ from furbox.utils.progress_bar import ProgressBar
 logger = logging.getLogger(__name__)
 
 
-def update_e621_comics(config: Config, e621_comics: list[E621Comic], use_db: bool = False) -> None:
+def update_e621_comics(
+    config: Config, e621_comics: list[E621Comic], use_db: bool = False, dry_run: bool = True,
+) -> None:
     """ Update e621 comics defined by comic definition file. """
     if config.e621 is None:
         logger.info("Config was not provided for e621, not updating")
@@ -57,11 +59,7 @@ def update_e621_comics(config: Config, e621_comics: list[E621Comic], use_db: boo
         for comic in e621_comics:
             pool = db_pools.get(comic.pool_id, Pool.from_api(e621_connector.get_pool(comic.pool_id)))
             comic_name = comic.name or pool.name
-
             local_pool_dir = config.comics.base_path / (comic.dir_name or comic_name)
-            if not local_pool_dir.exists():
-                logger.print(f"Folder '{local_pool_dir}' does not exist, creating it")
-                local_pool_dir.mkdir(parents=True, exist_ok=True)
 
             # Count the number of local files present, and offset it by the provided local file offset.
             local_num_posts = len([f for f in local_pool_dir.iterdir() if f.is_file()])
@@ -82,6 +80,10 @@ def update_e621_comics(config: Config, e621_comics: list[E621Comic], use_db: boo
 
             logger.print(f"{comic.name} has {page_num_diff} new pages")
             if not comic.update:
+                progress.advance()
+                continue
+
+            if dry_run:
                 progress.advance()
                 continue
 
