@@ -23,11 +23,12 @@ class ComicTypes(StrEnum):
         return [str(comic.value) for comic in cls]
 
 
-PARSER = cli.add_parser(name="comics_update", help="Update local comic files.")
+PARSER = cli.add_parser(name="comics-update", help="Update local comic files.")
 PARSER.add_argument("comic_type", nargs="*", type=ComicTypes, choices=ComicTypes.all_types(),
                     help=(f"Types of comic to update. All types will be downloaded if not specified. "
                           f"Allowed comic types are '{'\', \''.join(ComicTypes.all_types())}'."))
 PARSER.add_argument("--use-db", action="store_true", help="Fetch e621 pool data from a database dump.")
+PARSER.add_argument("--dry-run", action="store_true", help="Preview updates without modifying files.")
 
 
 @cli.entrypoint(parser=PARSER)
@@ -53,6 +54,7 @@ def comics_update(args: argparse.Namespace, config: Config) -> int | None:
             config=config,
             e621_comics=comics.e621,
             use_db=args.use_db,
+            dry_run=args.dry_run,
         )
 
     return None
