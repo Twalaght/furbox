@@ -18,24 +18,36 @@ from furbox.runners.e621 import _SUBPARSERS
 logger = logging.getLogger(__name__)
 
 
-PARSER = cli.add_parser("download", subparsers=_SUBPARSERS, help="TODO.")
+PARSER = cli.add_parser("download", subparsers=_SUBPARSERS, help="Download posts from an e621 query or pool.")
 PARSER.add_argument("search_query", help="Search query to download posts from.")
 PARSER.add_argument(
     "--pool",
     action="store_true",
     help="Download posts based on a pool, search query must be an integer if using pool mode.",
 )
+PARSER.add_argument(
+    "--limit",
+    type=int,
+    help="Download only the first N posts returned by the query. Only applies to non-pool downloads.",
+)
+PARSER.add_argument(
+    "--offset",
+    type=int,
+    help="Skip the first N posts returned by the query. Only applies to non-pool downloads.",
+)
 
 
 @cli.entrypoint(PARSER)
 def download(args: argparse.Namespace, config: Config) -> int | None:
     """ Download from e621 based on search parameters. """
-    if config.e621 is None:
-        logger.error("Config requires `e621` to be defined to use the download utility")
-        return 1
-
     search_query = cast(str, args.search_query)
-    pool_mode = args.pool
+    pool_mode = cast(bool, args.pool)
+    post_limit = cast(int | None, args.limit)
+    post_offset = cast(int | None, args.offset)
+
+    if config.e621 is None:
+        logger.error("Config requires `e621` to be defined to use comic update utility")
+        return 1
 
     e621_connector = E621Connector(
         username=config.e621.username,
@@ -76,7 +88,14 @@ def download(args: argparse.Namespace, config: Config) -> int | None:
         )
 
         # Fetch pool information from the pools endpoint, and posts information using the general search.
-        posts = [Post.from_api(post) for post in e621_connector.get_posts(search_query)]
+        posts = [
+            Post.from_api(post) for post in
+            e621_connector.get_posts(
+                search=search_query,
+                offset=post_offset,
+                limit=post_limit,
+            )
+        ]
 
         # Generate download URLs and associated file name pairs.
         file_targets = [UrlFileTarget(
