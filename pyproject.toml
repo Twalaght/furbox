@@ -8,7 +8,7 @@ requires-python = ">=3.12"
 dependencies = [
     "backoff>=2.2.1",
     "beautifulsoup4>=4.14.3",
-    "fluffless>=0.0.4",
+    "fluffless>=0.0.5",
     "pyyaml>=6.0.3",
     "requests>=2.32.5",
 ]
