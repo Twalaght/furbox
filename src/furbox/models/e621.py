@@ -124,7 +124,15 @@ class Post(BaseModel):
         # Rename response fields to match their corresponding model fields.
         data["tags"]["copyrights"] = data["tags"].pop("copyright")
         data["post_id"] = data.pop("id")
-        data["file_info"] = data.pop("file")
+
+        # Extract info for file metadata and the original file.
+        file_info = data.pop("files")
+        data["file_info"] = file_info["meta"] | file_info["original"]
+
+        # Extract stats info for score, then combine stats with top level data.
+        stats = data.pop("stats")
+        data["score"] = stats["score"]
+        data |= stats
 
         # Explicitly drop some API data which is not parsed to a post model.
         for key in ("preview", "sample", "locked_tags", "has_notes"):

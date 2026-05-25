@@ -99,12 +99,19 @@ class E621Connector:
             # pagination, as posts will move between pages if any are created or deleted between requests
             page = f"b{posts[-1]['id']}" if posts else page
 
-            # Request each page of posts through the API
-            search_url = f"{self.base_url}/posts.json?limit={self.PAGE_LIMIT}&tags={search}&page={page}"
-            response = self.session.get(search_url)
-            response.raise_for_status()
+            # Request each page of posts through the API.
+            response = self.session.get(
+                url=f"{self.base_url}/posts.json",
+                params={
+                    "v2": "true",  # NOTE: May be removed beyond Dec 2026 as this becomes default behaviour.
+                    "mode": "extended",
+                    "limit": self.PAGE_LIMIT,
+                    "tags": search,
+                    "page": page,
+                },
+            )
 
-            response_posts = response.json()["posts"]
+            response_posts = response.json()
             posts.extend(response_posts)
             progress.advance(len(response_posts))
 
