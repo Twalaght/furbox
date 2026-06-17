@@ -1,2 +1,3 @@
 # furbox
-Python library for various furry media utilities
+
+Python library for various furry media utilities.
