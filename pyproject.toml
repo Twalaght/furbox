@@ -7,33 +7,38 @@ requires-python = ">=3.12"
 
 dependencies = [
     "backoff>=2.2.1",
-    "beautifulsoup4>=4.14.3",
-    "fluffless>=0.0.5",
-    "pyyaml>=6.0.3",
+    "beautifulsoup4>=4.15.0",
+    "fluffless>=0.0.7",
+    "rich>=15.0.0",
     "requests>=2.32.5",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "fluffless[dev]>=0.0.4",
+    "fluffless[dev]>=0.0.7",
 ]
 
 [project.scripts]
 furbox = "furbox.main:main"
 
 [build-system]
-requires = ["setuptools>=80.9.0", "versioningit>=3.3.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling>=1.30.1", "uv-dynamic-versioning>=0.14.0"]
+build-backend = "hatchling.build"
 
-[tool.versioningit.vcs]
-method = "git"
-default-tag = "0.0.0"
+[tool.hatch.version]
+source = "uv-dynamic-versioning"
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.hatch.build.targets.sdist]
+include = ["src", "tests"]
 
-# Flake8 python linter - see https://github.com/PyCQA/flake8
-# Using a plugin to support pyproject.toml - see https://github.com/john-hen/Flake8-pyproject
+[tool.hatch.build.targets.wheel]
+packages = ["src/furbox"]
+
+[tool.uv-dynamic-versioning]
+fallback-version = "0.0.0"
+
+# Flake8 Python linter - https://github.com/PyCQA/flake8
+# Using a plugin to support pyproject.toml - https://github.com/john-hen/Flake8-pyproject
 [tool.flake8]
 max-line-length = 120
 
@@ -123,7 +128,23 @@ order-by-type = false
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
-[tool.yamlfix]  # YAML auto-formatter - https://lyz-code.github.io/yamlfix/
+# Markdown auto-formatter - https://github.com/jackdewinter/pymarkdown
+[tool.pymarkdown]
+plugins.line-length.enabled = true
+plugins.no-inline-html.enabled = true
+plugins.first-line-heading.enabled = true
+plugins.no-blanks-blockquote = true
+
+plugins.list-marker-space.enabled = true
+plugins.list-marker-space.ul_single = 3
+plugins.list-marker-space.ul_multi = 3
+plugins.list-marker-space.ol_single = 2
+plugins.list-marker-space.ol_multi = 2
+
+plugins.ul-indent.indent = 4
+
+# YAML auto-formatter - https://lyz-code.github.io/yamlfix/
+[tool.yamlfix]
 allow_duplicate_keys = true
 line_length = 120
 none_representation = "null"
