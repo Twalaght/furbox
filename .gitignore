@@ -1,3 +1,6 @@
+# Nix builds
+result
+
 # Top level YAML files, but not dotfiles
 /*.yaml
 !.*.yaml
