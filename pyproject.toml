@@ -7,14 +7,14 @@ requires-python = ">=3.12"
 
 dependencies = [
     "beautifulsoup4>=4.14.3",
-    "fluffless>=0.0.4",
+    "fluffless>=0.0.7",
     "pyyaml>=6.0.3",
     "requests>=2.32.5",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "fluffless[dev]>=0.0.4",
+    "fluffless[dev]>=0.0.7",
 ]
 
 [project.scripts]
