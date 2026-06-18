@@ -101,19 +101,15 @@ def update_e621_comics(config: Config, e621_comics: list[E621Comic], use_db: boo
             # Remove the URLs which correspond to files already downloaded
             download_urls = [post.file_info.url for post in posts][offset_local_num_posts:]
 
-            url_name_pairs = list(zip(
-                download_urls,
-                get_numbered_file_names(
-                    name=comic_name,
-                    length=len(download_urls),
-                    offset=local_num_posts,
-                ),
-                strict=True,
-            ))
+            # Generate download URLs and associated file name pairs.
+            file_targets = get_numbered_file_names(
+                download_urls=download_urls,
+                download_directory=local_pool_dir,
+                name=comic_name,
+            )
 
             download_files(
-                url_name_pairs=url_name_pairs,
-                download_dir=local_pool_dir,
+                file_targets=file_targets,
                 description=f"Downloading {comic_name}",
             )
 
