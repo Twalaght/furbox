@@ -11,7 +11,7 @@ from typing import Any, Callable
 import requests
 
 from furbox.connectors.cache import Cache
-from furbox.connectors.downloader import download_file
+from furbox.connectors.downloader import download_file_progress
 from furbox.helpers.utils import Constants
 from furbox.models.e621 import Pool, Tag
 from furbox.utils.progress_bar import ProgressBar
@@ -217,7 +217,7 @@ class E621DbConnector:
             latest_database = next(line for line in reversed(all_database_indexes) if database_name in line)
             latest_database_name = latest_database.split('"')[1]
 
-            download_file(
+            download_file_progress(
                 url=f"{self.BASE_URL}/db_export/{latest_database_name}",
                 file_path=file_path,
                 description=f"Fetching database {latest_database_name}",
