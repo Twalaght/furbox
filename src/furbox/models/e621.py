@@ -2,7 +2,7 @@
 import itertools
 from copy import deepcopy
 from datetime import datetime
-from enum import StrEnum
+from enum import IntEnum, StrEnum
 from typing import Any, Self
 
 from fluffless.models.base_model import BaseModel
@@ -248,3 +248,47 @@ class Pool(BaseModel):
         data["active"] = data.pop("is_active")
 
         return cls(**data)  # type: ignore[invalid-argument-type]
+
+
+class Tag(BaseModel):
+    """ Dataclass representation of an e621 tag. """
+
+    class Category(IntEnum):
+        """ Int enum of categories an e621 tag may be associated with. """
+
+        GENERAL = 0
+        ARTIST = 1
+        CONTRIBUTOR = 2
+        COPYRIGHT = 3
+        CHARACTER = 4
+        SPECIES = 5
+        INVALID = 6
+        META = 7
+        LORE = 8
+
+    tag_id:                  int
+    name:                    str
+    post_count:              int
+    related_tags:            dict[str, int] = {}
+    related_tags_updated_at: datetime
+    category:                Category
+    is_locked:               bool
+    created_at:              datetime
+    updated_at:              datetime
+
+    @classmethod
+    def from_api(cls, api_response: dict[str, Any]) -> Self:
+        """ Create a tag model from an API response. """
+        # Copy the API response such that the input data is not mangled during the remap.
+        data = deepcopy(api_response)
+
+        # Rename response fields to match their corresponding model fields.
+        data["tag_id"] = data.pop("id")
+
+        # Extract the related tags string into a dictionary of tag names to their associated relationship score.
+        # It can return a literal string "[]" when empty so this must be checked against.
+        if (related_tag_string := data.pop("related_tags")) not in ("[]", None):
+            iterator = iter(related_tag_string.split(" "))
+            data["related_tags"] = dict(zip(iterator, iterator, strict=True))
+
+        return cls(**data)
