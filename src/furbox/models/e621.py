@@ -11,7 +11,13 @@ from fluffless.utils import logging
 logger = logging.getLogger(__name__)
 
 # Artist tags which are used only for metadata, and should not be considered as actual artists.
-META_ARTISTS = ("conditional_dnp", "sound_warning")
+META_ARTISTS = (
+    "anonymous_artist",
+    "conditional_dnp",
+    "sound_warning",
+    "third-party_edit",
+    "unknown_artist",
+)
 
 
 def source_url_from_hash(md5_hash: str, extension: str) -> str:
