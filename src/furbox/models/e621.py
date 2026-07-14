@@ -101,6 +101,11 @@ class Post(BaseModel):
             all_tags = [getattr(self, key) for key in list(type(self).model_fields.keys())]
             return sorted(set(itertools.chain(*all_tags)))
 
+        @property
+        def artist_names(self) -> list[str]:
+            """ Get the names of all artists not considered metadata tags. """
+            return [artist for artist in self.artist if artist not in META_ARTISTS]
+
     post_id:       int
     uploader_id:   int
     approver_id:   int | None = None
