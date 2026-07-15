@@ -1,4 +1,4 @@
-""" Download a search query or pool from e621. """
+""" Synchronise upstream e621 favourites with local files. """
 import argparse
 import shutil
 from concurrent.futures import ThreadPoolExecutor
@@ -17,7 +17,8 @@ from furbox.utils.progress_bar import ProgressBar
 
 logger = logging.getLogger(__name__)
 
-PARSER = cli.add_parser("fav-sync", subparsers=_SUBPARSERS, help="TODO")
+PARSER = cli.add_parser("fav-sync", subparsers=_SUBPARSERS,
+                        help=" Synchronise upstream e621 favourites with local files.")
 PARSER.add_argument("--dry-run", action="store_true", help="Preview updates without modifying files.")
 
 
@@ -111,7 +112,17 @@ def determine_artist(e621_connector: E621Connector, post: Post) -> str:
 def process_directory(
     e621_connector: E621Connector, directory: Path, rating: Post.Rating, favourites: list[Post],
 ) -> list[UrlFileTarget | RenameFileTarget]:
-    """ TODO. """
+    """ Generate jobs to perform to synchronise a given directory with E621 favourites.
+
+    Args:
+        e621_connector (E621Connector): E621 connector to use when determining artist information.
+        directory (Path): Local directory to consider for synchronisation.
+        rating (Post.Rating): Rating to consider for the given directory.
+        favourites (list[Post]): Full list of E621 favourites to sync.
+
+    Returns:
+        list[UrlFileTarget | RenameFileTarget]: List of rename and download tasks to perform for the directory.
+    """
     files = [f for f in directory.iterdir() if f.is_file()]
 
     # Get the MD5 hash of all local files to compare to the upstream.
