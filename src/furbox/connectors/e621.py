@@ -13,7 +13,7 @@ import requests
 from furbox.connectors.cache import Cache
 from furbox.connectors.downloader import download_file
 from furbox.helpers.utils import Constants
-from furbox.models.e621 import Pool
+from furbox.models.e621 import Pool, Tag
 from furbox.utils.progress_bar import ProgressBar
 
 logger = logging.getLogger(__name__)
@@ -144,6 +144,31 @@ class E621Connector:
         sleep(self.API_DELAY)
 
         return response.json()
+
+    def get_tag(self, tag_name: str, tag_category: Tag.Category | None) -> dict[str, Any] | None:
+        """ Get information on a given tag. Does not perform partial searching, fully matches a tag or returns nothing.
+
+        Args:
+            tag_name (str): Name of the tag to fetch information for.
+            tag_category (Tag.Category | None): \
+                Limit the response to a given category of tag. Searches all tags if unset.
+
+        Returns:
+            dict[str, Any] | None: Tag JSON data, or None if no tag was found.
+        """
+        response = self.session.get(
+            f"{self.base_url}/tags.json",
+            params={
+                "search[name_matches]": tag_name,
+            } | {
+                "search[category]": tag_category.value,
+            } if tag_category else {},
+        )
+        response.raise_for_status()
+
+        sleep(self.API_DELAY)
+
+        return next(iter(response.json()), None)
 
 
 class E621DbConnector:
