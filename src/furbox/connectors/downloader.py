@@ -9,7 +9,7 @@ from typing import NamedTuple, Self
 import backoff
 import requests
 
-from furbox.helpers.utils import clean_url
+from furbox.helpers.utils import clean_url, execute_futures
 from furbox.utils.progress_bar import ProgressBar, ProgressBarStyle
 
 logger = logging.getLogger(__name__)
@@ -94,7 +94,7 @@ def get_numbered_file_names(
     ]
 
 
-def download_file(url: str, file_path: Path, description: str, leave_progress_bar: bool) -> None:
+def download_file_progress(url: str, file_path: Path, description: str, leave_progress_bar: bool) -> None:
     """ Download a file from a URL with a progress bar.
 
     Args:
@@ -133,47 +133,34 @@ def download_file(url: str, file_path: Path, description: str, leave_progress_ba
     )
 
 
-def parallel_download(args: tuple[str, Path]) -> None:
-    """ Download multiple files in parallel.
+@backoff.on_exception(backoff.expo, exception=requests.HTTPError, max_tries=3)
+def download_file(url: str, file_path: Path) -> None:
+    """ Download a single file to disk.
 
     Args:
-        args (tuple[str, Path]): Positional arguments to pass to `download()`.
+        url (str): URL to download the file from.
+        file_path (Path): File path to save the downloaded file to.
     """
-    @backoff.on_exception(backoff.expo, exception=requests.HTTPError, max_tries=3)
-    def download(url: str, file_path: Path, progress_bar: ProgressBar | None = None) -> None:
-        """ Download a single file to disk.
+    # Create the parent directory if required.
+    parent_path = file_path.resolve().parent
+    parent_path.mkdir(parents=True, exist_ok=True)
 
-        Args:
-            url (str): URL to download the file from.
-            file_path (Path): File path to save the downloaded file to.
-            progress_bar (ProgressBar | None): Progress bar to increment on successful download, if provided.
-        """
-        # Create the parent directory if required.
-        parent_path = file_path.resolve().parent
-        parent_path.mkdir(parents=True, exist_ok=True)
+    if file_path.exists() and file_path.is_file():
+        while True:
+            backup_path = parent_path / f"_backup_{uuid.uuid4()}{file_path.name}"
+            if not backup_path.exists():
+                logger.warning(f"File '{file_path}' already exists, moving it to '{backup_path}'")
+                file_path.rename(backup_path)
 
-        if file_path.exists() and file_path.is_file():
-            while True:
-                backup_path = parent_path / f"_backup_{uuid.uuid4()}{file_path.name}"
-                if not backup_path.exists():
-                    logger.warning(f"File '{file_path}' already exists, moving it to '{backup_path}'")
-                    file_path.rename(backup_path)
+    # Download the file to a temporary file path.
+    tmp_file_path = file_path.resolve().parent / f"_{file_path.name}"
+    with Path(tmp_file_path).open("wb") as f:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        f.write(response.content)
 
-        # Download the file to a temporary file path.
-        tmp_file_path = file_path.resolve().parent / f"_{file_path.name}"
-        with Path(tmp_file_path).open("wb") as f:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            f.write(response.content)
-
-        # Once downloaded, move the temporarily file to the desired file path.
-        tmp_file_path.rename(file_path)
-
-        if progress_bar:
-            progress_bar.advance()
-
-    # Call the inner function with supplied tuple of arguments.
-    download(*args)
+    # Once downloaded, move the temporarily file to the desired file path.
+    tmp_file_path.rename(file_path)
 
 
 def download_files(file_targets: list[UrlFileTarget], description: str, threads: int = 8) -> None:
@@ -188,5 +175,10 @@ def download_files(file_targets: list[UrlFileTarget], description: str, threads:
         ProgressBar(description, length=len(file_targets)) as progress,
         ThreadPoolExecutor(max_workers=threads) as executor,
     ):
-        download_args = [(target.url, target.output_path, progress) for target in file_targets]
-        executor.map(parallel_download, download_args)
+        execute_futures(
+            futures=[
+                executor.submit(download_file, url=target.url, file_path=target.output_path)
+                for target in file_targets
+            ],
+            progress_bar=progress,
+        )

@@ -12,7 +12,7 @@ from rich.prompt import Confirm, Prompt
 from furbox.connectors.downloader import download_files, get_numbered_file_names, UrlFileTarget
 from furbox.connectors.e621 import E621Connector
 from furbox.models.config import Config
-from furbox.models.e621 import META_ARTISTS, Pool, Post
+from furbox.models.e621 import Pool, Post
 from furbox.runners.e621 import _SUBPARSERS
 
 logger = logging.getLogger(__name__)
@@ -68,9 +68,8 @@ def download(args: argparse.Namespace, config: Config) -> int | None:
         title = Prompt.ask("Pool title", default=pool.name.replace("_", " "))
 
         # Set the artist of the pool by finding the most common artist tag applied to the posts.
-        artist_tags = list(itertools.chain(*[post.tags.artist for post in posts]))
-        artist_tags = [artist for artist in artist_tags if artist not in META_ARTISTS]
-        artist = Counter(artist_tags).most_common(1)[0][0].capitalize()
+        artist_names = list(itertools.chain(*[post.tags.artist_names for post in posts]))
+        artist = Counter(artist_names).most_common(1)[0][0].capitalize()
         artist = Prompt.ask("Artist", default=artist)
 
         # Generate download URLs and associated file name pairs.

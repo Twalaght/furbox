@@ -13,7 +13,7 @@ from fluffless.models.base_model import BaseModel
 from fluffless.utils import logging
 
 from furbox.connectors.downloader import download_files, get_numbered_file_names
-from furbox.helpers.utils import clean_url, Constants, md5_from_file, md5_from_url
+from furbox.helpers.utils import clean_url, Constants, hash_file, md5_from_url
 from furbox.utils.progress_bar import ProgressBar
 
 logger = logging.getLogger(__name__)
@@ -101,7 +101,7 @@ def custom_comic_update(custom_comic: CustomComic, comic_path: Path) -> None:
     file_name_offset = 0
     if local_files := [f for f in local_comic_dir.iterdir() if f.is_file()]:
         last_file = local_files[-1]
-        target_hash = md5_from_file(last_file)
+        target_hash = hash_file(last_file)
         try:
             file_name_offset = int(last_file.stem.split(" ")[-1])
         except Exception:
