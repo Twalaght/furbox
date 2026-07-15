@@ -28,9 +28,9 @@ class Config(BaseModel):
         class FavPaths(BaseModel):
             """ E621 favourite path config definitions. """
 
-            safe:         str
-            questionable: str
-            explicit:     str
+            safe:         Path
+            questionable: Path
+            explicit:     Path
 
         username:  str
         api_key:   str
